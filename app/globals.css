@@ -1,26 +1,396 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-icon-orange {
+    color: hsl(var(--icon-orange));
+  }
+  .text-icon-blue {
+    color: hsl(var(--icon-blue));
+  }
+  .text-icon-green {
+    color: hsl(var(--icon-green));
+  }
+  .text-icon-purple {
+    color: hsl(var(--icon-purple));
+  }
+  .text-icon-cyan {
+    color: hsl(var(--icon-cyan));
+  }
+  .text-icon-yellow {
+    color: hsl(var(--icon-yellow));
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  :root {
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
+    
+    /* Base Theme Variables - Cyberpunk (Default Dark) */
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 8%;
+    --popover-foreground: 0 0% 98%;
+    
+    /* Primary/Accent Colors - Cyberpunk Orange */
+    --primary: 24 100% 50%;
+    --primary-foreground: 0 0% 98%;
+    --accent: 24 100% 50%;
+    --accent-foreground: 0 0% 98%;
+    
+    /* Secondary accent - lighter shade */
+    --secondary: 240 10% 14%;
+    --secondary-foreground: 0 0% 98%;
+    
+    /* UI Element Colors */
+    --muted: 240 10% 14%;
+    --muted-foreground: 240 5% 64%;
+    --border: 240 10% 18%;
+    --input: 240 10% 18%;
+    --ring: 24 100% 50%;
+    
+    /* Destructive */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    
+    /* Chart Colors - Themed */
+    --chart-1: 24 100% 50%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    
+    /* Icon Color Variations - Cyberpunk Theme */
+    --icon-orange: 24 100% 50%;
+    --icon-blue: 217 91% 60%;
+    --icon-green: 142 76% 36%;
+    --icon-purple: 280 65% 60%;
+    --icon-cyan: 187 85% 53%;
+    --icon-yellow: 43 96% 56%;
+    
+    --radius: 0.5rem;
+  }
+
+  /* Midnight Blue Theme */
+  [data-theme="midnight"] {
+    --background: 220 15% 5%;
+    --foreground: 210 40% 98%;
+    --card: 220 15% 10%;
+    --card-foreground: 210 40% 98%;
+    --popover: 220 15% 10%;
+    --popover-foreground: 210 40% 98%;
+    
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
+    
+    --secondary: 220 15% 16%;
+    --secondary-foreground: 210 40% 98%;
+    
+    --muted: 220 15% 16%;
+    --muted-foreground: 217 20% 65%;
+    --border: 220 15% 20%;
+    --input: 220 15% 20%;
+    --ring: 217 91% 60%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --chart-1: 217 91% 60%;
+    --chart-2: 187 85% 53%;
+    --chart-3: 158 64% 52%;
+    --chart-4: 200 98% 39%;
+    --chart-5: 205 100% 70%;
+  }
+
+  /* Forest Green Theme */
+  [data-theme="forest"] {
+    --background: 150 20% 5%;
+    --foreground: 144 20% 98%;
+    --card: 150 20% 10%;
+    --card-foreground: 144 20% 98%;
+    --popover: 150 20% 10%;
+    --popover-foreground: 144 20% 98%;
+    
+    --primary: 142 76% 36%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 142 76% 36%;
+    --accent-foreground: 0 0% 100%;
+    
+    --secondary: 150 20% 16%;
+    --secondary-foreground: 144 20% 98%;
+    
+    --muted: 150 20% 16%;
+    --muted-foreground: 150 10% 65%;
+    --border: 150 20% 20%;
+    --input: 150 20% 20%;
+    --ring: 142 76% 36%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 144 20% 98%;
+    
+    --chart-1: 142 76% 36%;
+    --chart-2: 158 64% 52%;
+    --chart-3: 173 58% 39%;
+    --chart-4: 122 39% 49%;
+    --chart-5: 95 60% 45%;
+  }
+
+  /* Sunset Purple/Pink Theme */
+  [data-theme="sunset"] {
+    --background: 280 20% 5%;
+    --foreground: 280 10% 98%;
+    --card: 280 20% 10%;
+    --card-foreground: 280 10% 98%;
+    --popover: 280 20% 10%;
+    --popover-foreground: 280 10% 98%;
+    
+    --primary: 300 76% 60%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 300 76% 60%;
+    --accent-foreground: 0 0% 100%;
+    
+    --secondary: 280 20% 16%;
+    --secondary-foreground: 280 10% 98%;
+    
+    --muted: 280 20% 16%;
+    --muted-foreground: 280 10% 65%;
+    --border: 280 20% 20%;
+    --input: 280 20% 20%;
+    --ring: 300 76% 60%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 280 10% 98%;
+    
+    --chart-1: 300 76% 60%;
+    --chart-2: 280 65% 60%;
+    --chart-3: 320 85% 65%;
+    --chart-4: 340 82% 67%;
+    --chart-5: 350 89% 60%;
+  }
+
+  /* Arctic Cyan Theme */
+  [data-theme="arctic"] {
+    --background: 190 20% 5%;
+    --foreground: 190 10% 98%;
+    --card: 190 20% 10%;
+    --card-foreground: 190 10% 98%;
+    --popover: 190 20% 10%;
+    --popover-foreground: 190 10% 98%;
+    
+    --primary: 187 85% 53%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 187 85% 53%;
+    --accent-foreground: 0 0% 100%;
+    
+    --secondary: 190 20% 16%;
+    --secondary-foreground: 190 10% 98%;
+    
+    --muted: 190 20% 16%;
+    --muted-foreground: 190 10% 65%;
+    --border: 190 20% 20%;
+    --input: 190 20% 20%;
+    --ring: 187 85% 53%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 190 10% 98%;
+    
+    --chart-1: 187 85% 53%;
+    --chart-2: 180 77% 50%;
+    --chart-3: 173 58% 39%;
+    --chart-4: 197 71% 73%;
+    --chart-5: 166 76% 37%;
+  }
+
+  /* Monochrome Dark Theme */
+  [data-theme="monochrome-dark"] {
+    --background: 0 0% 8%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 12%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 12%;
+    --popover-foreground: 0 0% 95%;
+    
+    --primary: 0 0% 80%;
+    --primary-foreground: 0 0% 10%;
+    --accent: 0 0% 80%;
+    --accent-foreground: 0 0% 10%;
+    
+    --secondary: 0 0% 16%;
+    --secondary-foreground: 0 0% 95%;
+    
+    --muted: 0 0% 16%;
+    --muted-foreground: 0 0% 60%;
+    --border: 0 0% 22%;
+    --input: 0 0% 22%;
+    --ring: 0 0% 80%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 95%;
+    
+    --chart-1: 0 0% 70%;
+    --chart-2: 0 0% 55%;
+    --chart-3: 0 0% 40%;
+    --chart-4: 0 0% 85%;
+    --chart-5: 0 0% 25%;
+  }
+
+  /* Monochrome Light Theme */
+  [data-theme="monochrome-light"] {
+    --background: 0 0% 98%;
+    --foreground: 0 0% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    
+    --primary: 0 0% 25%;
+    --primary-foreground: 0 0% 98%;
+    --accent: 0 0% 25%;
+    --accent-foreground: 0 0% 98%;
+    
+    --secondary: 0 0% 92%;
+    --secondary-foreground: 0 0% 15%;
+    
+    --muted: 0 0% 92%;
+    --muted-foreground: 0 0% 45%;
+    --border: 0 0% 85%;
+    --input: 0 0% 85%;
+    --ring: 0 0% 25%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --chart-1: 0 0% 30%;
+    --chart-2: 0 0% 45%;
+    --chart-3: 0 0% 60%;
+    --chart-4: 0 0% 15%;
+    --chart-5: 0 0% 75%;
+  }
+
+  /* Light Theme */
+  [data-theme="light"] {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    
+    --primary: 24 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 24 100% 50%;
+    --accent-foreground: 0 0% 100%;
+    
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 24 100% 50%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --chart-1: 24 100% 50%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+  }
+
+  /* Warm Light Theme */
+  [data-theme="warm-light"] {
+    --background: 30 25% 98%;
+    --foreground: 30 30% 10%;
+    --card: 30 20% 96%;
+    --card-foreground: 30 30% 10%;
+    --popover: 30 20% 96%;
+    --popover-foreground: 30 30% 10%;
+    
+    --primary: 27 87% 50%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 27 87% 50%;
+    --accent-foreground: 0 0% 100%;
+    
+    --secondary: 30 20% 92%;
+    --secondary-foreground: 30 30% 15%;
+    
+    --muted: 30 20% 92%;
+    --muted-foreground: 30 15% 45%;
+    --border: 30 20% 85%;
+    --input: 30 20% 85%;
+    --ring: 27 87% 50%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --chart-1: 27 87% 50%;
+    --chart-2: 43 74% 49%;
+    --chart-3: 35 85% 45%;
+    --chart-4: 20 90% 48%;
+    --chart-5: 10 80% 55%;
+  }
+
+  /* Cool Light Theme */
+  [data-theme="cool-light"] {
+    --background: 210 40% 98%;
+    --foreground: 222.2 84% 10%;
+    --card: 210 35% 96%;
+    --card-foreground: 222.2 84% 10%;
+    --popover: 210 35% 96%;
+    --popover-foreground: 222.2 84% 10%;
+    
+    --primary: 217 91% 50%;
+    --primary-foreground: 0 0% 100%;
+    --accent: 217 91% 50%;
+    --accent-foreground: 0 0% 100%;
+    
+    --secondary: 210 35% 92%;
+    --secondary-foreground: 222.2 47.4% 15%;
+    
+    --muted: 210 35% 92%;
+    --muted-foreground: 215.4 16.3% 45%;
+    --border: 214.3 31.8% 85%;
+    --input: 214.3 31.8% 85%;
+    --ring: 217 91% 50%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --chart-1: 217 91% 50%;
+    --chart-2: 187 85% 45%;
+    --chart-3: 200 98% 35%;
+    --chart-4: 205 100% 60%;
+    --chart-5: 195 70% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Pulse animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
