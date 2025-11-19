@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { MessageSquare, Trash2, Plus, Search, Sparkles, Calendar, ChevronLeft, ChevronRight, Send, Loader2 } from 'lucide-react'
-import { getChatSessions, saveChatSession, deleteChatSession, generateChatTitle } from "@/lib/storage"
+import { getChatSessions, saveChatSession, deleteChatSession, generateChatTitle, getCurrentPOs, getApprovedPOs } from "@/lib/storage"
 import { ChatSession, ChatMessage } from "@/lib/types"
 
 export default function IntelligencePage() {
@@ -54,13 +54,24 @@ export default function IntelligencePage() {
     setIsLoading(true)
 
     try {
+      // Get current PO data from localStorage on client side
+      const currentPOsData = getCurrentPOs()
+      const approvedPOsData = getApprovedPOs()
+
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: input }),
+        body: JSON.stringify({ 
+          query: input,
+          currentPOs: currentPOsData,
+          approvedPOs: approvedPOsData
+        }),
       })
 
-      if (!response.ok) throw new Error('Analysis failed')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Analysis failed')
+      }
 
       const data = await response.json()
       const assistantMessage: ChatMessage = {
@@ -81,6 +92,26 @@ export default function IntelligencePage() {
       setSessions(getChatSessions())
     } catch (err) {
       console.error('[v0] AI analysis error:', err)
+      
+      // Show error message to user
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: err instanceof Error 
+          ? `Error: ${err.message}. Please make sure your Anthropic API key is configured correctly in your .env.local file.`
+          : 'Sorry, I encountered an error while analyzing your data. Please try again.',
+        timestamp: new Date(),
+      }
+
+      const errorSession = {
+        ...updatedSession,
+        messages: [...updatedSession.messages, errorMessage],
+        updatedAt: new Date(),
+      }
+
+      setActiveSession(errorSession)
+      saveChatSession(errorSession)
+      setSessions(getChatSessions())
     } finally {
       setIsLoading(false)
     }
@@ -97,6 +128,16 @@ export default function IntelligencePage() {
   const filteredSessions = sessions.filter(s => 
     s.title.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  // Suggested questions based on available data
+  const suggestedQuestions = [
+    "Which suppliers have the highest spending?",
+    "Show me price trends for the last month",
+    "Are there any unusual price increases?",
+    "Compare spending across different branches",
+    "Which categories have the most orders?",
+    "Identify potential duplicate orders"
+  ]
 
   return (
     <div className="p-6 h-screen flex gap-6 relative">
@@ -209,11 +250,30 @@ export default function IntelligencePage() {
 
         <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
           {!activeSession ? (
-            <div className="flex-1 flex items-center justify-center" data-tour="ai-suggestions">
-              <div className="text-center">
+            <div className="flex-1 flex items-center justify-center p-6" data-tour="ai-suggestions">
+              <div className="text-center max-w-2xl">
                 <Sparkles className="w-12 h-12 text-accent mx-auto mb-3" />
-                <p className="text-foreground mb-2">Welcome to AI Analysis</p>
-                <p className="text-sm text-muted-foreground mb-4">Start a new chat to analyze your purchase orders</p>
+                <p className="text-foreground mb-2 text-lg font-semibold">Welcome to AI Analysis</p>
+                <p className="text-sm text-muted-foreground mb-6">Start a new chat to analyze your purchase orders with Claude AI</p>
+                
+                <div className="mb-6">
+                  <p className="text-xs text-muted-foreground mb-3">Try asking:</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {suggestedQuestions.map((question, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          createNewChat()
+                          setTimeout(() => setInput(question), 100)
+                        }}
+                        className="text-left p-3 text-xs bg-muted hover:bg-muted/80 rounded-lg border border-border transition-colors"
+                      >
+                        {question}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <Button
                   onClick={createNewChat}
                   className="bg-accent hover:bg-accent/90"
@@ -249,7 +309,7 @@ export default function IntelligencePage() {
                   <div className="flex justify-start">
                     <div className="bg-card-hover border border-border rounded-lg px-4 py-3 flex items-center gap-2">
                       <Loader2 className="w-4 h-4 text-accent animate-spin" />
-                      <span className="text-sm text-foreground">Analyzing...</span>
+                      <span className="text-sm text-foreground">Analyzing with Claude...</span>
                     </div>
                   </div>
                 )}

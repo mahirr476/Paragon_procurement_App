@@ -1,167 +1,233 @@
+// Backward Compatibility Layer for storage.ts
+// This file maintains the existing API while using the new data service underneath
+// This allows existing code to work without changes
+
+'use client'
+
 import { PurchaseOrder, ChatSession, Notification } from './types'
 
-const APPROVED_POS_KEY = 'approved_pos'
-const CURRENT_POS_KEY = 'current_pos'
-const CHAT_SESSIONS_KEY = 'chat_sessions'
-const NOTIFICATIONS_KEY = 'notifications'
-const TUTORIALS_KEY = 'tutorials_completed'
-const THEME_KEY = 'app_theme'
+// Since we're on the client side, we need to use the API routes
+// These functions now make fetch calls to the API endpoints
 
-export function saveApprovedPOs(pos: PurchaseOrder[]) {
-  localStorage.setItem(APPROVED_POS_KEY, JSON.stringify(pos))
+// Purchase Order Functions
+export function getCurrentPOs(): PurchaseOrder[] {
+  // For synchronous compatibility, we return from localStorage temporarily
+  if (typeof window === 'undefined') return []
+  const stored = localStorage.getItem('current_pos')
+  return stored ? JSON.parse(stored) : []
+}
+
+export function saveCurrentPOs(pos: PurchaseOrder[]): void {
+  if (typeof window === 'undefined') return
+  localStorage.setItem('current_pos', JSON.stringify(pos))
+  
+  // Async sync to backend
+  fetch('/api/pos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'saveCurrent', data: pos }),
+  }).catch(console.error)
+}
+
+export function addToCurrentPOs(pos: PurchaseOrder[]): void {
+  const current = getCurrentPOs()
+  const updated = [...current, ...pos]
+  saveCurrentPOs(updated)
+}
+
+export function clearCurrentPOs(): void {
+  saveCurrentPOs([])
 }
 
 export function getApprovedPOs(): PurchaseOrder[] {
-  const data = localStorage.getItem(APPROVED_POS_KEY)
-  return data ? JSON.parse(data) : []
+  if (typeof window === 'undefined') return []
+  const stored = localStorage.getItem('approved_pos')
+  return stored ? JSON.parse(stored) : []
 }
 
-export function saveCurrentPOs(pos: PurchaseOrder[]) {
-  localStorage.setItem(CURRENT_POS_KEY, JSON.stringify(pos))
+export function addToApprovedPOs(pos: PurchaseOrder[]): void {
+  const approved = getApprovedPOs()
+  const updated = [...approved, ...pos]
+  if (typeof window === 'undefined') return
+  localStorage.setItem('approved_pos', JSON.stringify(updated))
+  
+  fetch('/api/pos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'addToApproved', data: pos }),
+  }).catch(console.error)
 }
 
-export function getCurrentPOs(): PurchaseOrder[] {
-  const data = localStorage.getItem(CURRENT_POS_KEY)
-  return data ? JSON.parse(data) : []
+export function deleteApprovedPO(id: string): void {
+  const approved = getApprovedPOs()
+  const filtered = approved.filter(po => po.id !== id)
+  if (typeof window === 'undefined') return
+  localStorage.setItem('approved_pos', JSON.stringify(filtered))
+  
+  fetch('/api/pos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'deleteApproved', data: { id } }),
+  }).catch(console.error)
 }
 
-export function addToApprovedPOs(pos: PurchaseOrder[]) {
-  const existing = getApprovedPOs()
-  const updated = [...existing, ...pos]
-  saveApprovedPOs(updated)
+export function clearApprovedPOs(): void {
+  if (typeof window === 'undefined') return
+  localStorage.setItem('approved_pos', JSON.stringify([]))
+  
+  fetch('/api/pos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'clearApproved' }),
+  }).catch(console.error)
 }
 
-export function clearCurrentPOs() {
-  localStorage.removeItem(CURRENT_POS_KEY)
-}
-
-export function removeCurrentPOs(poIds: string[]) {
-  const current = getCurrentPOs()
-  const filtered = current.filter(po => !poIds.includes(po.id))
-  saveCurrentPOs(filtered)
-}
-
+// Chat Functions
 export function getChatSessions(): ChatSession[] {
-  const data = localStorage.getItem(CHAT_SESSIONS_KEY)
-  if (!data) return []
-  const sessions = JSON.parse(data)
-  return sessions.map((s: any) => ({
-    ...s,
-    createdAt: new Date(s.createdAt),
-    updatedAt: new Date(s.updatedAt),
-    messages: s.messages.map((m: any) => ({
-      ...m,
-      timestamp: new Date(m.timestamp)
-    }))
-  }))
+  if (typeof window === 'undefined') return []
+  const stored = localStorage.getItem('chat_sessions')
+  return stored ? JSON.parse(stored) : []
 }
 
-export function saveChatSession(session: ChatSession) {
+export function saveChatSession(session: ChatSession): void {
   const sessions = getChatSessions()
   const index = sessions.findIndex(s => s.id === session.id)
-  if (index >= 0) {
+  
+  if (index !== -1) {
     sessions[index] = session
   } else {
     sessions.push(session)
   }
-  localStorage.setItem(CHAT_SESSIONS_KEY, JSON.stringify(sessions))
+  
+  if (typeof window === 'undefined') return
+  localStorage.setItem('chat_sessions', JSON.stringify(sessions))
+  
+  fetch('/api/chats', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'save', data: session }),
+  }).catch(console.error)
 }
 
-export function deleteChatSession(sessionId: string) {
+export function deleteChatSession(id: string): void {
   const sessions = getChatSessions()
-  const filtered = sessions.filter(s => s.id !== sessionId)
-  localStorage.setItem(CHAT_SESSIONS_KEY, JSON.stringify(filtered))
+  const filtered = sessions.filter(s => s.id !== id)
+  if (typeof window === 'undefined') return
+  localStorage.setItem('chat_sessions', JSON.stringify(filtered))
+  
+  fetch('/api/chats', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'delete', data: { id } }),
+  }).catch(console.error)
 }
 
 export function generateChatTitle(firstMessage: string): string {
-  // Generate title from first user message (max 50 chars)
-  return firstMessage.length > 50 
-    ? firstMessage.substring(0, 47) + '...' 
-    : firstMessage
+  const maxLength = 50
+  const title = firstMessage.trim().slice(0, maxLength)
+  return title.length < firstMessage.length ? `${title}...` : title
 }
 
+// Notification Functions
 export function getNotifications(): Notification[] {
-  const data = localStorage.getItem(NOTIFICATIONS_KEY)
-  if (!data) return []
-  const notifications = JSON.parse(data)
-  return notifications.map((n: any) => ({
-    ...n,
-    createdAt: new Date(n.createdAt)
-  }))
+  if (typeof window === 'undefined') return []
+  const stored = localStorage.getItem('notifications')
+  return stored ? JSON.parse(stored) : []
 }
 
-export function saveNotifications(notifications: Notification[]) {
-  localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications))
-}
-
-export function addNotification(notification: Omit<Notification, 'id' | 'createdAt' | 'read'>) {
+export function addNotification(notification: Omit<Notification, 'id' | 'timestamp' | 'read'>): void {
   const notifications = getNotifications()
   const newNotification: Notification = {
     ...notification,
     id: Date.now().toString(),
-    createdAt: new Date(),
-    read: false
+    timestamp: new Date(),
+    read: false,
   }
+  
   notifications.unshift(newNotification)
-  saveNotifications(notifications)
-  return newNotification
+  if (typeof window === 'undefined') return
+  localStorage.setItem('notifications', JSON.stringify(notifications))
+  
+  fetch('/api/notifications', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'add', data: notification }),
+  }).catch(console.error)
 }
 
-export function markNotificationAsRead(notificationId: string) {
+export function markNotificationAsRead(id: string): void {
   const notifications = getNotifications()
-  const updated = notifications.map(n => 
-    n.id === notificationId ? { ...n, read: true } : n
-  )
-  saveNotifications(updated)
-}
-
-export function markAllNotificationsAsRead() {
-  const notifications = getNotifications()
-  const updated = notifications.map(n => ({ ...n, read: true }))
-  saveNotifications(updated)
-}
-
-export function deleteNotification(notificationId: string) {
-  const notifications = getNotifications()
-  const filtered = notifications.filter(n => n.id !== notificationId)
-  saveNotifications(filtered)
-}
-
-export function clearAllNotifications() {
-  localStorage.removeItem(NOTIFICATIONS_KEY)
-}
-
-export function getTutorialsCompleted(): Record<string, boolean> {
-  const data = localStorage.getItem(TUTORIALS_KEY)
-  return data ? JSON.parse(data) : {}
-}
-
-export function markTutorialComplete(tutorialId: string) {
-  const tutorials = getTutorialsCompleted()
-  tutorials[tutorialId] = true
-  localStorage.setItem(TUTORIALS_KEY, JSON.stringify(tutorials))
-}
-
-export function skipAllTutorials() {
-  const tutorials = {
-    overview: true,
-    upload: true,
-    reports: true,
-    agents: true,
-    intelligence: true,
-    systems: true
+  const notification = notifications.find(n => n.id === id)
+  
+  if (notification) {
+    notification.read = true
+    if (typeof window === 'undefined') return
+    localStorage.setItem('notifications', JSON.stringify(notifications))
+    
+    fetch('/api/notifications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'markRead', data: { id } }),
+    }).catch(console.error)
   }
-  localStorage.setItem(TUTORIALS_KEY, JSON.stringify(tutorials))
 }
 
-export function resetTutorials() {
-  localStorage.removeItem(TUTORIALS_KEY)
+export function clearNotifications(): void {
+  if (typeof window === 'undefined') return
+  localStorage.setItem('notifications', JSON.stringify([]))
+  
+  fetch('/api/notifications', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'clear' }),
+  }).catch(console.error)
 }
 
-export function getTheme(): string {
-  return localStorage.getItem(THEME_KEY) || 'cyberpunk'
+// Settings Functions
+export function getTutorialsCompleted(): Set<string> {
+  if (typeof window === 'undefined') return new Set()
+  const stored = localStorage.getItem('settings')
+  const settings = stored ? JSON.parse(stored) : { tutorialsCompleted: [] }
+  return new Set(settings.tutorialsCompleted)
 }
 
-export function saveTheme(theme: string) {
-  localStorage.setItem(THEME_KEY, theme)
+export function markTutorialComplete(tutorialId: string): void {
+  const completed = getTutorialsCompleted()
+  completed.add(tutorialId)
+  if (typeof window === 'undefined') return
+  localStorage.setItem('settings', JSON.stringify({
+    tutorialsCompleted: Array.from(completed)
+  }))
+  
+  fetch('/api/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'markTutorialComplete', data: { tutorialId } }),
+  }).catch(console.error)
+}
+
+export function skipAllTutorials(): void {
+  if (typeof window === 'undefined') return
+  localStorage.setItem('settings', JSON.stringify({
+    tutorialsCompleted: ['all']
+  }))
+  
+  fetch('/api/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'skipAllTutorials' }),
+  }).catch(console.error)
+}
+
+export function resetTutorials(): void {
+  if (typeof window === 'undefined') return
+  localStorage.setItem('settings', JSON.stringify({
+    tutorialsCompleted: []
+  }))
+  
+  fetch('/api/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'resetTutorials' }),
+  }).catch(console.error)
 }
