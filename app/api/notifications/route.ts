@@ -9,12 +9,12 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Invalid query' }, { status: 400 })
     }
 
-    const currentPOs = await getCurrentPOs()
+    const currentPOs = getCurrentPOs()
     const approvedPOs = await getApprovedPOs()
 
     // Prepare context for AI
     const poContext = {
-      currentPOs: currentPOs.map(po => ({
+      currentPOs: (await currentPOs).map(po => ({
         supplier: po.supplier,
         item: po.item,
         qty: po.maxQty,
@@ -30,10 +30,10 @@ export async function POST(request: Request) {
         totalAmount: po.totalAmount,
       })),
       summary: {
-        totalCurrentPOs: currentPOs.length,
-        totalCurrentAmount: currentPOs.reduce((sum, po) => sum + po.totalAmount, 0),
+        totalCurrentPOs: (await currentPOs).length,
+        totalCurrentAmount: (await currentPOs).reduce((sum, po) => sum + po.totalAmount, 0),
         totalApprovedAmount: approvedPOs.reduce((sum, po) => sum + po.totalAmount, 0),
-        uniqueSuppliers: new Set([...currentPOs, ...approvedPOs].map(po => po.supplier)).size,
+        uniqueSuppliers: new Set([...await currentPOs, ...approvedPOs].map(po => po.supplier)).size,
       }
     }
 

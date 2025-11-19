@@ -1,10 +1,10 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Geist_Mono as GeistMono } from 'next/font/google'
+import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 import { ChatSidebar } from "@/components/chat-sidebar"
 
-const geistMono = GeistMono({ subsets: ["latin"] })
+// const geistMono = GeistMono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "Tactical Operations Dashboard",
@@ -19,7 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className={`${geistMono.className} bg-black text-white antialiased`}>
+      <body className={`${GeistMono.className} bg-black text-white antialiased`}>
         {children}
         <ChatSidebar />
       </body>

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Shield, AlertCircle, CheckCircle2 } from 'lucide-react'
-import { registerUser } from "@/lib/auth"
+import { registerUser } from "@/lib/auth-server"
 import Link from "next/link"
 
 export default function RegisterPage() {
@@ -45,7 +45,7 @@ export default function RegisterPage() {
       return
     }
 
-    const result = registerUser(formData.email, formData.password, formData.name, formData.company)
+    const result = await registerUser(formData.email, formData.password, formData.name, formData.company)
 
     if (result.success) {
       router.push("/login")

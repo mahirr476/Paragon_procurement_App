@@ -13,7 +13,7 @@ import IntelligencePage from "./intelligence/page"
 import SystemsPage from "./systems/page"
 import ReportsPage from "./reports/page"
 import { getApprovedPOs } from "@/lib/storage"
-import { getCurrentUser } from "@/lib/auth"
+import { getCurrentUser } from "@/lib/auth-server"
 import { useRouter } from 'next/navigation'
 import { InteractiveTour } from "@/components/interactive-tour"
 import { SkipTutorialsDialog } from "@/components/skip-tutorials-dialog"
@@ -24,7 +24,7 @@ export default function TacticalDashboard() {
   const [activeSection, setActiveSection] = useState("overview")
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [approvedPOs, setApprovedPOs] = useState(getApprovedPOs())
-  const [currentUser, setCurrentUser] = useState(getCurrentUser())
+  const [currentUser, setCurrentUser] = useState<any>(null)
   const [showTutorialDialog, setShowTutorialDialog] = useState(false)
   const [activeTutorial, setActiveTutorial] = useState<string | null>(null)
   const [tutorialsEnabled, setTutorialsEnabled] = useState(false)
@@ -32,12 +32,23 @@ export default function TacticalDashboard() {
 
   // Check authentication
   useEffect(() => {
-    const user = getCurrentUser()
-    if (!user) {
-      router.push("/login")
-    } else {
-      setCurrentUser(user)
+    const checkAuth = async () => {
+      // Get userId from session storage or other auth mechanism
+      const userId = sessionStorage.getItem('userId')
+      if (!userId) {
+        router.push("/login")
+        return
+      }
+      
+      const user = await getCurrentUser(userId)
+      if (!user) {
+        router.push("/login")
+      } else {
+        setCurrentUser(user)
+      }
     }
+    
+    checkAuth()
   }, [router])
 
   // Refresh approved POs when returning to dashboard

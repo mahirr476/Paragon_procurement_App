@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Shield, AlertCircle } from 'lucide-react'
-import { loginUser } from "@/lib/auth"
+import { loginUser } from "@/lib/auth-server"
 import Link from "next/link"
 
 export default function LoginPage() {
@@ -28,7 +28,7 @@ export default function LoginPage() {
       return
     }
 
-    const result = loginUser(email, password)
+    const result = await loginUser(email, password)
 
     if (result.success) {
       sessionStorage.setItem('show_tutorial_dialog', 'true')

@@ -1,0 +1,124 @@
+// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  company   String
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  chatSessions  ChatSession[]
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model PurchaseOrder {
+  id               String   @id @default(cuid())
+  date             String
+  supplier         String
+  orderNo          String
+  refNo            String
+  dueDate          String
+  branch           String
+  requisitionType  String
+  itemLedgerGroup  String
+  item             String
+  minQty           Float
+  maxQty           Float
+  unit             String
+  rate             Float
+  deliveryDate     String
+  cgst             Float
+  sgst             Float
+  igst             Float
+  vat              Float
+  lastApprovedRate Float
+  lastSupplier     String
+  broker           String
+  totalAmount      Float
+  status           String
+  deliveryType     String
+  openPO           String
+  openPONo         String
+  uploadedAt       DateTime @default(now())
+  isApproved       Boolean  @default(false)
+  approvalNotes    String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([supplier])
+  @@index([branch])
+  @@index([itemLedgerGroup])
+  @@index([isApproved])
+  @@index([date])
+  @@map("purchase_orders")
+}
+
+model ChatSession {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+
+  @@index([userId])
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id            String      @id @default(cuid())
+  sessionId     String
+  role          String // 'user' or 'assistant'
+  content       String      @db.Text
+  timestamp     DateTime    @default(now())
+  
+  session       ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("chat_messages")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String // 'po_upload' | 'approval_needed' | 'anomaly_detected' | 'system'
+  title     String
+  message   String   @db.Text
+  count     Int?
+  severity  String // 'info' | 'warning' | 'error'
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@map("notifications")
+}
+
+model Settings {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  theme     String   @default("cyberpunk")
+  tutorials Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
