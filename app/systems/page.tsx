@@ -9,7 +9,7 @@ import { Server, Database, Shield, Wifi, HardDrive, Cpu, Activity, AlertTriangle
 import { resetTutorials } from "@/lib/storage"
 
 export default function SystemsPage() {
-  const [selectedSystem, setSelectedSystem] = useState(null)
+  const [selectedSystem, setSelectedSystem] = useState<typeof systems[0] | null>(null)
 
   const systems = [
     {
@@ -92,7 +92,7 @@ export default function SystemsPage() {
     },
   ]
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case "online":
         return "bg-white/20 text-white"
@@ -107,7 +107,7 @@ export default function SystemsPage() {
     }
   }
 
-  const getStatusIcon = (status) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case "online":
         return <CheckCircle className="w-4 h-4" />
@@ -122,7 +122,7 @@ export default function SystemsPage() {
     }
   }
 
-  const getSystemIcon = (type) => {
+  const getSystemIcon = (type: string) => {
     switch (type) {
       case "Primary Server":
         return <Server className="w-6 h-6" />
@@ -141,7 +141,7 @@ export default function SystemsPage() {
     }
   }
 
-  const getHealthColor = (health) => {
+  const getHealthColor = (health: number) => {
     if (health >= 95) return "text-white"
     if (health >= 85) return "text-white"
     if (health >= 70) return "text-orange-500"

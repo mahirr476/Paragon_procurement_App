@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Upload, CheckCircle, AlertCircle } from 'lucide-react'
 import { parseCSV } from '@/lib/csv-parser'
-import { saveCurrentPOs } from '@/lib/storage'
+import { saveCurrentPOs } from '@/lib/storage-server'
 
 interface CSVUploaderProps {
   onUploadSuccess: (count: number) => void

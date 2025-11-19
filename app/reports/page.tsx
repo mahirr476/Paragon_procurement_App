@@ -197,13 +197,13 @@ export default function ReportsPage() {
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={spendByCategory.slice(0, 10)}
+                  data={spendByCategory.slice(0, 10).map(item => ({ ...item, [item.category]: item.amount }))}
                   dataKey="amount"
                   nameKey="category"
                   cx="50%"
                   cy="50%"
                   outerRadius={100}
-                  label={(entry) => `${entry.category}: ${entry.percentage.toFixed(1)}%`}
+                  label={({ name, percent }) => `${name}: ${((percent ?? 0) * 100).toFixed(1)}%`}
                   stroke="#fff"
                   strokeWidth={2}
                 >

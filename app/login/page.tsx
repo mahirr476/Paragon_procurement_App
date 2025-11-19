@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Shield, AlertCircle } from 'lucide-react'
-import { loginUser } from "@/lib/auth-server"
+// import { loginUser } from "@/lib/auth-server"
 import Link from "next/link"
 
 export default function LoginPage() {
@@ -28,16 +28,37 @@ export default function LoginPage() {
       return
     }
 
-    const result = await loginUser(email, password)
+    try {
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'login',
+          email, 
+          password 
+        })
+      })
 
-    if (result.success) {
-      sessionStorage.setItem('show_tutorial_dialog', 'true')
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || 'Login failed')
+        setLoading(false)
+        return
+      }
+
+      // Store user in localStorage temporarily
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('current_user', JSON.stringify(data.user))
+        sessionStorage.setItem('show_tutorial_dialog', 'true')
+      }
+
       router.push("/")
-    } else {
-      setError(result.error || "Login failed")
+    } catch (err) {
+      console.error('[v0] Login error:', err)
+      setError('An error occurred. Please try again.')
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   return (

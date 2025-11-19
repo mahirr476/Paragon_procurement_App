@@ -21,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { logoutUser, updateUser, deleteUser } from "@/lib/auth-server"
+import { logoutUser, updateUser, deleteUser, getCurrentUser } from "@/lib/auth"
 import { useRouter } from 'next/navigation'
 import { User as UserType } from "@/lib/types"
 

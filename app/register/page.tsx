@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Shield, AlertCircle, CheckCircle2 } from 'lucide-react'
-import { registerUser } from "@/lib/auth-server"
+// import { registerUser } from "@/lib/auth"
 import Link from "next/link"
 
 export default function RegisterPage() {
@@ -45,15 +45,33 @@ export default function RegisterPage() {
       return
     }
 
-    const result = await registerUser(formData.email, formData.password, formData.name, formData.company)
+    try {
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'register',
+          email: formData.email,
+          password: formData.password,
+          name: formData.name,
+          company: formData.company
+        })
+      })
 
-    if (result.success) {
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || 'Registration failed')
+        setLoading(false)
+        return
+      }
+
       router.push("/login")
-    } else {
-      setError(result.error || "Registration failed")
+    } catch (err) {
+      console.error('[v0] Registration error:', err)
+      setError('An error occurred. Please try again.')
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   return (

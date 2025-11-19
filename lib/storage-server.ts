@@ -19,7 +19,8 @@ export async function getApprovedPOs(): Promise<PurchaseOrder[]> {
   })
   return pos.map(po => ({
     ...po,
-    uploadedAt: po.uploadedAt.toISOString()
+    uploadedAt: po.uploadedAt.toISOString(),
+    approvalNotes: po.approvalNotes ?? undefined
   }))
 }
 
@@ -30,7 +31,8 @@ export async function getCurrentPOs(): Promise<PurchaseOrder[]> {
   })
   return pos.map(po => ({
     ...po,
-    uploadedAt: po.uploadedAt.toISOString()
+    uploadedAt: po.uploadedAt.toISOString(),
+    approvalNotes: po.approvalNotes ?? undefined
   }))
 }
 
