@@ -1,167 +1,190 @@
-import { PurchaseOrder, ChatSession, Notification } from './types'
+import type { PurchaseOrder, ChatSession, Notification } from "./types"
 
-const APPROVED_POS_KEY = 'approved_pos'
-const CURRENT_POS_KEY = 'current_pos'
-const CHAT_SESSIONS_KEY = 'chat_sessions'
-const NOTIFICATIONS_KEY = 'notifications'
-const TUTORIALS_KEY = 'tutorials_completed'
-const THEME_KEY = 'app_theme'
-
-export function saveApprovedPOs(pos: PurchaseOrder[]) {
-  localStorage.setItem(APPROVED_POS_KEY, JSON.stringify(pos))
+// Purchase Orders API
+export async function saveApprovedPOs(pos: PurchaseOrder[]) {
+  const response = await fetch("/api/pos", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pos: pos.map((po) => ({ ...po, isApproved: true })) }),
+  })
+  return response.json()
 }
 
-export function getApprovedPOs(): PurchaseOrder[] {
-  const data = localStorage.getItem(APPROVED_POS_KEY)
-  return data ? JSON.parse(data) : []
+export async function getApprovedPOs(): Promise<PurchaseOrder[]> {
+  const response = await fetch("/api/pos?approved=true")
+  const data = await response.json()
+  return data.success ? data.pos : []
 }
 
-export function saveCurrentPOs(pos: PurchaseOrder[]) {
-  localStorage.setItem(CURRENT_POS_KEY, JSON.stringify(pos))
+export async function saveCurrentPOs(pos: PurchaseOrder[]) {
+  const response = await fetch("/api/pos", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pos: pos.map((po) => ({ ...po, isApproved: false })) }),
+  })
+  return response.json()
 }
 
-export function getCurrentPOs(): PurchaseOrder[] {
-  const data = localStorage.getItem(CURRENT_POS_KEY)
-  return data ? JSON.parse(data) : []
+export async function getCurrentPOs(): Promise<PurchaseOrder[]> {
+  const response = await fetch("/api/pos?approved=false")
+  const data = await response.json()
+  return data.success ? data.pos : []
 }
 
-export function addToApprovedPOs(pos: PurchaseOrder[]) {
-  const existing = getApprovedPOs()
-  const updated = [...existing, ...pos]
-  saveApprovedPOs(updated)
+export async function addToApprovedPOs(pos: PurchaseOrder[]) {
+  const existing = await getApprovedPOs()
+  const combined = [...existing, ...pos]
+  return saveApprovedPOs(combined)
 }
 
-export function clearCurrentPOs() {
-  localStorage.removeItem(CURRENT_POS_KEY)
+export async function clearCurrentPOs() {
+  const currentPOs = await getCurrentPOs()
+  const ids = currentPOs.map((po) => po.id)
+  const response = await fetch(`/api/pos?ids=${ids.join(",")}`, {
+    method: "DELETE",
+  })
+  return response.json()
 }
 
-export function removeCurrentPOs(poIds: string[]) {
-  const current = getCurrentPOs()
-  const filtered = current.filter(po => !poIds.includes(po.id))
-  saveCurrentPOs(filtered)
+export async function removeCurrentPOs(poIds: string[]) {
+  const response = await fetch(`/api/pos?ids=${poIds.join(",")}`, {
+    method: "DELETE",
+  })
+  return response.json()
 }
 
-export function getChatSessions(): ChatSession[] {
-  const data = localStorage.getItem(CHAT_SESSIONS_KEY)
-  if (!data) return []
-  const sessions = JSON.parse(data)
-  return sessions.map((s: any) => ({
+// Chat Sessions API
+export async function getChatSessions(userId: string): Promise<ChatSession[]> {
+  const response = await fetch(`/api/chat/sessions?userId=${userId}`)
+  const data = await response.json()
+
+  if (!data.success) return []
+
+  return data.sessions.map((s: any) => ({
     ...s,
     createdAt: new Date(s.createdAt),
     updatedAt: new Date(s.updatedAt),
     messages: s.messages.map((m: any) => ({
       ...m,
-      timestamp: new Date(m.timestamp)
-    }))
+      timestamp: new Date(m.timestamp),
+    })),
   }))
 }
 
-export function saveChatSession(session: ChatSession) {
-  const sessions = getChatSessions()
-  const index = sessions.findIndex(s => s.id === session.id)
-  if (index >= 0) {
-    sessions[index] = session
-  } else {
-    sessions.push(session)
-  }
-  localStorage.setItem(CHAT_SESSIONS_KEY, JSON.stringify(sessions))
+export async function saveChatSession(userId: string, session: ChatSession) {
+  const response = await fetch("/api/chat/sessions", {
+    method: session.id ? "PUT" : "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      userId,
+      sessionId: session.id,
+      title: session.title,
+      updates: { title: session.title },
+    }),
+  })
+  return response.json()
 }
 
-export function deleteChatSession(sessionId: string) {
-  const sessions = getChatSessions()
-  const filtered = sessions.filter(s => s.id !== sessionId)
-  localStorage.setItem(CHAT_SESSIONS_KEY, JSON.stringify(filtered))
+export async function deleteChatSession(sessionId: string) {
+  const response = await fetch(`/api/chat/sessions?sessionId=${sessionId}`, {
+    method: "DELETE",
+  })
+  return response.json()
 }
 
 export function generateChatTitle(firstMessage: string): string {
-  // Generate title from first user message (max 50 chars)
-  return firstMessage.length > 50 
-    ? firstMessage.substring(0, 47) + '...' 
-    : firstMessage
+  return firstMessage.length > 50 ? firstMessage.substring(0, 47) + "..." : firstMessage
 }
 
-export function getNotifications(): Notification[] {
-  const data = localStorage.getItem(NOTIFICATIONS_KEY)
-  if (!data) return []
-  const notifications = JSON.parse(data)
-  return notifications.map((n: any) => ({
+// Notifications API
+export async function getNotifications(userId: string): Promise<Notification[]> {
+  const response = await fetch(`/api/notifications?userId=${userId}`)
+  const data = await response.json()
+
+  if (!data.success) return []
+
+  return data.notifications.map((n: any) => ({
     ...n,
-    createdAt: new Date(n.createdAt)
+    createdAt: new Date(n.createdAt),
   }))
 }
 
-export function saveNotifications(notifications: Notification[]) {
-  localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications))
+export async function addNotification(userId: string, notification: Omit<Notification, "id" | "createdAt" | "read">) {
+  const response = await fetch("/api/notifications", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, ...notification }),
+  })
+  const data = await response.json()
+  return data.success ? data.notification : null
 }
 
-export function addNotification(notification: Omit<Notification, 'id' | 'createdAt' | 'read'>) {
-  const notifications = getNotifications()
-  const newNotification: Notification = {
-    ...notification,
-    id: Date.now().toString(),
-    createdAt: new Date(),
-    read: false
-  }
-  notifications.unshift(newNotification)
-  saveNotifications(notifications)
-  return newNotification
+export async function markNotificationAsRead(notificationId: string) {
+  const response = await fetch("/api/notifications", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ notificationId, read: true }),
+  })
+  return response.json()
 }
 
-export function markNotificationAsRead(notificationId: string) {
-  const notifications = getNotifications()
-  const updated = notifications.map(n => 
-    n.id === notificationId ? { ...n, read: true } : n
-  )
-  saveNotifications(updated)
+export async function markAllNotificationsAsRead(userId: string) {
+  const notifications = await getNotifications(userId)
+  await Promise.all(notifications.map((n) => markNotificationAsRead(n.id)))
 }
 
-export function markAllNotificationsAsRead() {
-  const notifications = getNotifications()
-  const updated = notifications.map(n => ({ ...n, read: true }))
-  saveNotifications(updated)
+export async function deleteNotification(notificationId: string) {
+  const response = await fetch(`/api/notifications?id=${notificationId}`, {
+    method: "DELETE",
+  })
+  return response.json()
 }
 
-export function deleteNotification(notificationId: string) {
-  const notifications = getNotifications()
-  const filtered = notifications.filter(n => n.id !== notificationId)
-  saveNotifications(filtered)
+export async function clearAllNotifications(userId: string) {
+  const notifications = await getNotifications(userId)
+  await Promise.all(notifications.map((n) => deleteNotification(n.id)))
 }
 
-export function clearAllNotifications() {
-  localStorage.removeItem(NOTIFICATIONS_KEY)
+// Tutorials API
+export async function getTutorialsCompleted(userId: string): Promise<Record<string, boolean>> {
+  const response = await fetch(`/api/tutorials?userId=${userId}`)
+  const data = await response.json()
+  return data.success ? data.tutorials : {}
 }
 
-export function getTutorialsCompleted(): Record<string, boolean> {
-  const data = localStorage.getItem(TUTORIALS_KEY)
-  return data ? JSON.parse(data) : {}
+export async function markTutorialComplete(userId: string, tutorialId: string) {
+  const response = await fetch("/api/tutorials", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, tutorialId }),
+  })
+  return response.json()
 }
 
-export function markTutorialComplete(tutorialId: string) {
-  const tutorials = getTutorialsCompleted()
-  tutorials[tutorialId] = true
-  localStorage.setItem(TUTORIALS_KEY, JSON.stringify(tutorials))
+export async function skipAllTutorials(userId: string) {
+  const tutorialIds = ["overview", "upload", "reports", "agents", "intelligence", "systems"]
+  await Promise.all(tutorialIds.map((id) => markTutorialComplete(userId, id)))
 }
 
-export function skipAllTutorials() {
-  const tutorials = {
-    overview: true,
-    upload: true,
-    reports: true,
-    agents: true,
-    intelligence: true,
-    systems: true
-  }
-  localStorage.setItem(TUTORIALS_KEY, JSON.stringify(tutorials))
+export async function resetTutorials(userId: string) {
+  const response = await fetch(`/api/tutorials?userId=${userId}`, {
+    method: "DELETE",
+  })
+  return response.json()
 }
 
-export function resetTutorials() {
-  localStorage.removeItem(TUTORIALS_KEY)
+// Theme API
+export async function getTheme(userId: string): Promise<string> {
+  const response = await fetch(`/api/theme?userId=${userId}`)
+  const data = await response.json()
+  return data.success && data.theme ? data.theme : "cyberpunk"
 }
 
-export function getTheme(): string {
-  return localStorage.getItem(THEME_KEY) || 'cyberpunk'
-}
-
-export function saveTheme(theme: string) {
-  localStorage.setItem(THEME_KEY, theme)
+export async function saveTheme(userId: string, themeName: string) {
+  const response = await fetch("/api/theme", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, themeName }),
+  })
+  return response.json()
 }

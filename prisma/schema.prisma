@@ -1,4 +1,3 @@
-// This is your Prisma schema file
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,114 +10,118 @@ datasource db {
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
+  name      String?
   password  String
-  name      String
-  company   String
+  company   String?
   role      String   @default("user")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  chatSessions  ChatSession[]
-  notifications Notification[]
-
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  notifications  Notification[]
+  chatSessions   ChatSession[]
+  tutorials      Tutorial[]
+  theme          Theme?
+  
   @@map("users")
 }
 
 model PurchaseOrder {
-  id               String   @id @default(cuid())
-  date             String
-  supplier         String
-  orderNo          String
-  refNo            String
-  dueDate          String
-  branch           String
-  requisitionType  String
-  itemLedgerGroup  String
-  item             String
-  minQty           Float
-  maxQty           Float
-  unit             String
-  rate             Float
-  deliveryDate     String
-  cgst             Float
-  sgst             Float
-  igst             Float
-  vat              Float
-  lastApprovedRate Float
-  lastSupplier     String
-  broker           String
-  totalAmount      Float
-  status           String
-  deliveryType     String
-  openPO           String
-  openPONo         String
-  uploadedAt       DateTime @default(now())
-  isApproved       Boolean  @default(false)
-  approvalNotes    String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  @@index([supplier])
-  @@index([branch])
-  @@index([itemLedgerGroup])
-  @@index([isApproved])
-  @@index([date])
+  id                String   @id @default(cuid())
+  date              String
+  supplier          String
+  orderNo           String   @map("order_no")
+  refNo             String   @map("ref_no")
+  dueDate           String   @map("due_date")
+  branch            String
+  requisitionType   String   @map("requisition_type")
+  itemLedgerGroup   String   @map("item_ledger_group")
+  item              String
+  minQty            Float    @map("min_qty")
+  maxQty            Float    @map("max_qty")
+  unit              String
+  rate              Float
+  deliveryDate      String   @map("delivery_date")
+  cgst              Float
+  sgst              Float
+  igst              Float
+  vat               Float
+  lastApprovedRate  Float    @map("last_approved_rate")
+  lastSupplier      String   @map("last_supplier")
+  broker            String
+  totalAmount       Float    @map("total_amount")
+  status            String
+  deliveryType      String   @map("delivery_type")
+  openPO            String   @map("open_po")
+  openPONo          String   @map("open_po_no")
+  uploadedAt        DateTime @default(now()) @map("uploaded_at")
+  isApproved        Boolean  @default(false) @map("is_approved")
+  approvalNotes     String?  @map("approval_notes")
+  
   @@map("purchase_orders")
 }
 
 model ChatSession {
   id        String   @id @default(cuid())
-  userId    String
+  userId    String   @map("user_id")
   title     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages ChatMessage[]
-
-  @@index([userId])
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  ChatMessage[]
+  
   @@map("chat_sessions")
 }
 
 model ChatMessage {
   id            String      @id @default(cuid())
-  sessionId     String
-  role          String // 'user' or 'assistant'
+  sessionId     String      @map("session_id")
+  role          String
   content       String      @db.Text
   timestamp     DateTime    @default(now())
   
   session       ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-
-  @@index([sessionId])
+  
   @@map("chat_messages")
 }
 
 model Notification {
   id        String   @id @default(cuid())
-  userId    String
-  type      String // 'po_upload' | 'approval_needed' | 'anomaly_detected' | 'system'
+  userId    String   @map("user_id")
+  type      String
   title     String
-  message   String   @db.Text
+  message   String
   count     Int?
-  severity  String // 'info' | 'warning' | 'error'
-  link      String?
+  severity  String
   read      Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([read])
+  link      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
   @@map("notifications")
 }
 
-model Settings {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  theme     String   @default("cyberpunk")
-  tutorials Json     @default("{}")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Tutorial {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  tutorialId    String   @map("tutorial_id")
+  completed     Boolean  @default(true)
+  completedAt   DateTime @default(now()) @map("completed_at")
+  
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, tutorialId])
+  @@map("tutorials")
+}
 
-  @@map("settings")
+model Theme {
+  id        String   @id @default(cuid())
+  userId    String   @unique @map("user_id")
+  themeName String   @default("cyberpunk") @map("theme_name")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("themes")
 }

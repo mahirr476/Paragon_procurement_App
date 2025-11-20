@@ -1,13 +1,15 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
-import { useRouter } from 'next/navigation'
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Shield, AlertCircle, CheckCircle2 } from 'lucide-react'
-// import { registerUser } from "@/lib/auth"
+import { Shield, AlertCircle } from "lucide-react"
+import { registerUser } from "@/lib/auth"
 import Link from "next/link"
 
 export default function RegisterPage() {
@@ -17,7 +19,7 @@ export default function RegisterPage() {
     email: "",
     company: "",
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
   })
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
@@ -26,6 +28,9 @@ export default function RegisterPage() {
     e.preventDefault()
     setError("")
     setLoading(true)
+
+    // Added console logs for debugging
+    console.log("[v0] Registration attempt with:", { email: formData.email, name: formData.name })
 
     if (!formData.name || !formData.email || !formData.company || !formData.password) {
       setError("Please fill in all fields")
@@ -45,33 +50,18 @@ export default function RegisterPage() {
       return
     }
 
-    try {
-      const response = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'register',
-          email: formData.email,
-          password: formData.password,
-          name: formData.name,
-          company: formData.company
-        })
-      })
+    // Added await to properly handle the Promise
+    const result = await registerUser(formData.email, formData.password, formData.name, formData.company)
 
-      const data = await response.json()
+    console.log("[v0] Registration result:", result)
 
-      if (!response.ok) {
-        setError(data.error || 'Registration failed')
-        setLoading(false)
-        return
-      }
-
+    if (result.success) {
       router.push("/login")
-    } catch (err) {
-      console.error('[v0] Registration error:', err)
-      setError('An error occurred. Please try again.')
-      setLoading(false)
+    } else {
+      setError(result.error || "Registration failed")
     }
+
+    setLoading(false)
   }
 
   return (
@@ -99,7 +89,9 @@ export default function RegisterPage() {
 
           <form onSubmit={handleRegister} className="space-y-4">
             <div>
-              <Label htmlFor="name" className="text-muted-foreground">Full Name</Label>
+              <Label htmlFor="name" className="text-muted-foreground">
+                Full Name
+              </Label>
               <Input
                 id="name"
                 type="text"
@@ -111,7 +103,9 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <Label htmlFor="email" className="text-muted-foreground">Email</Label>
+              <Label htmlFor="email" className="text-muted-foreground">
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -123,7 +117,9 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <Label htmlFor="company" className="text-muted-foreground">Company Name</Label>
+              <Label htmlFor="company" className="text-muted-foreground">
+                Company Name
+              </Label>
               <Input
                 id="company"
                 type="text"
@@ -135,7 +131,9 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <Label htmlFor="password" className="text-muted-foreground">Password</Label>
+              <Label htmlFor="password" className="text-muted-foreground">
+                Password
+              </Label>
               <Input
                 id="password"
                 type="password"
@@ -147,7 +145,9 @@ export default function RegisterPage() {
             </div>
 
             <div>
-              <Label htmlFor="confirmPassword" className="text-muted-foreground">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="text-muted-foreground">
+                Confirm Password
+              </Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -178,9 +178,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-muted-foreground/60 text-xs mt-6">
-          v1.0 Procurement Management System
-        </p>
+        <p className="text-center text-muted-foreground/60 text-xs mt-6">v1.0 Procurement Management System</p>
       </div>
     </div>
   )

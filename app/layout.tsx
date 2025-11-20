@@ -4,12 +4,11 @@ import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 import { ChatSidebar } from "@/components/chat-sidebar"
 
-// const geistMono = GeistMono({ subsets: ["latin"] })
+const geistMono = GeistMono
 
 export const metadata: Metadata = {
   title: "Tactical Operations Dashboard",
   description: "Tactical command and control system",
-    generator: 'v0.app'
 }
 
 export default function RootLayout({
@@ -19,7 +18,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className={`${GeistMono.className} bg-black text-white antialiased`}>
+      <body className={`${geistMono.className} bg-black text-white antialiased`}>
         {children}
         <ChatSidebar />
       </body>

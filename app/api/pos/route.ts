@@ -1,70 +1,78 @@
-import { NextResponse } from 'next/server'
-import { getCurrentPOs, saveCurrentPOs, addToApprovedPOs, clearCurrentPOs, removeCurrentPOs, getApprovedPOs } from '@/lib/storage-server'
-import { PurchaseOrder } from '@/lib/types'
+import { type NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
 
-// GET - Get current or approved POs
-export async function GET(request: Request) {
+export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const type = searchParams.get('type') // 'current' or 'approved'
+    const isApproved = req.nextUrl.searchParams.get("approved") === "true"
+    console.log("[v0] GET POs - isApproved:", isApproved)
 
-    if (type === 'current') {
-      const pos = await getCurrentPOs()
-      return NextResponse.json({ pos })
-    } else if (type === 'approved') {
-      const pos = await getApprovedPOs()
-      return NextResponse.json({ pos })
-    }
+    const pos = await prisma.purchaseOrder.findMany({
+      where: { isApproved },
+      orderBy: { uploadedAt: "desc" },
+    })
 
-    return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
+    return NextResponse.json({ success: true, pos })
   } catch (error) {
-    console.error('[v0] GET PO error:', error)
-    return NextResponse.json({ error: 'Failed to fetch POs' }, { status: 500 })
+    console.error("[v0] Get POs error:", error)
+    return NextResponse.json(
+      { success: false, pos: [], error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 },
+    )
   }
 }
 
-// POST - Save current POs
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const { pos }: { pos: PurchaseOrder[] } = await request.json()
-    await saveCurrentPOs(pos)
-    return NextResponse.json({ success: true })
+    const { pos } = await req.json()
+    console.log("[v0] POST POs - count:", pos?.length)
+
+    const createdPOs = await prisma.purchaseOrder.createMany({
+      data: pos,
+    })
+
+    return NextResponse.json({ success: true, count: createdPOs.count })
   } catch (error) {
-    console.error('[v0] POST PO error:', error)
-    return NextResponse.json({ error: 'Failed to save POs' }, { status: 500 })
+    console.error("[v0] Create POs error:", error)
+    return NextResponse.json(
+      { success: false, count: 0, error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 },
+    )
   }
 }
 
-// PUT - Approve POs
-export async function PUT(request: Request) {
+export async function PUT(req: NextRequest) {
   try {
-    const { pos }: { pos: PurchaseOrder[] } = await request.json()
-    await addToApprovedPOs(pos)
+    const { poIds, updates } = await req.json()
+
+    await prisma.purchaseOrder.updateMany({
+      where: { id: { in: poIds } },
+      data: updates,
+    })
+
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[v0] PUT PO error:', error)
-    return NextResponse.json({ error: 'Failed to approve POs' }, { status: 500 })
+    console.error("[v0] Update POs error:", error)
+    return NextResponse.json(
+      { success: false, error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 },
+    )
   }
 }
 
-// DELETE - Remove POs
-export async function DELETE(request: Request) {
+export async function DELETE(req: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const action = searchParams.get('action')
-    const ids = searchParams.get('ids')
+    const poIds = req.nextUrl.searchParams.get("ids")?.split(",") || []
 
-    if (action === 'clear') {
-      await clearCurrentPOs()
-    } else if (action === 'remove' && ids) {
-      await removeCurrentPOs(ids.split(','))
-    } else {
-      return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
-    }
+    await prisma.purchaseOrder.deleteMany({
+      where: { id: { in: poIds } },
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('[v0] DELETE PO error:', error)
-    return NextResponse.json({ error: 'Failed to delete POs' }, { status: 500 })
+    console.error("[v0] Delete POs error:", error)
+    return NextResponse.json(
+      { success: false, error: error instanceof Error ? error.message : "Internal server error" },
+      { status: 500 },
+    )
   }
 }

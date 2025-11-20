@@ -1,13 +1,15 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
-import { useRouter } from 'next/navigation'
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Shield, AlertCircle } from 'lucide-react'
-// import { loginUser } from "@/lib/auth-server"
+import { Shield, AlertCircle } from "lucide-react"
+import { loginUser } from "@/lib/auth"
 import Link from "next/link"
 
 export default function LoginPage() {
@@ -22,43 +24,26 @@ export default function LoginPage() {
     setError("")
     setLoading(true)
 
+    console.log("[v0] Login attempt with:", email)
+
     if (!email || !password) {
       setError("Please fill in all fields")
       setLoading(false)
       return
     }
 
-    try {
-      const response = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'login',
-          email, 
-          password 
-        })
-      })
+    const result = await loginUser(email, password)
 
-      const data = await response.json()
+    console.log("[v0] Login result:", result)
 
-      if (!response.ok) {
-        setError(data.error || 'Login failed')
-        setLoading(false)
-        return
-      }
-
-      // Store user in localStorage temporarily
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('current_user', JSON.stringify(data.user))
-        sessionStorage.setItem('show_tutorial_dialog', 'true')
-      }
-
+    if (result.success) {
+      sessionStorage.setItem("show_tutorial_dialog", "true")
       router.push("/")
-    } catch (err) {
-      console.error('[v0] Login error:', err)
-      setError('An error occurred. Please try again.')
-      setLoading(false)
+    } else {
+      setError(result.error || "Login failed")
     }
+
+    setLoading(false)
   }
 
   return (
@@ -86,7 +71,9 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <Label htmlFor="email" className="text-muted-foreground">Email</Label>
+              <Label htmlFor="email" className="text-muted-foreground">
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -98,7 +85,9 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <Label htmlFor="password" className="text-muted-foreground">Password</Label>
+              <Label htmlFor="password" className="text-muted-foreground">
+                Password
+              </Label>
               <Input
                 id="password"
                 type="password"
@@ -129,9 +118,7 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-muted-foreground/60 text-xs mt-6">
-          v1.0 Procurement Management System
-        </p>
+        <p className="text-center text-muted-foreground/60 text-xs mt-6">v1.0 Procurement Management System</p>
       </div>
     </div>
   )

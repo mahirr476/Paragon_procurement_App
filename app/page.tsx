@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ChevronRight, Settings, BarChart3, Zap, Database, FileText, Upload } from 'lucide-react'
+import { ChevronRight, Settings, BarChart3, Zap, Database, FileText, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DashboardOverview } from "@/components/dashboard-overview"
 import { ProfileDropdown } from "@/components/profile-dropdown"
@@ -13,18 +13,17 @@ import IntelligencePage from "./intelligence/page"
 import SystemsPage from "./systems/page"
 import ReportsPage from "./reports/page"
 import { getApprovedPOs } from "@/lib/storage"
-import { getCurrentUser } from "@/lib/auth-server"
-import { useRouter } from 'next/navigation'
+import { getCurrentUser } from "@/lib/auth"
+import { useRouter } from "next/navigation"
 import { InteractiveTour } from "@/components/interactive-tour"
 import { SkipTutorialsDialog } from "@/components/skip-tutorials-dialog"
-import { getTutorialsCompleted, markTutorialComplete, skipAllTutorials } from "@/lib/storage"
 
 export default function TacticalDashboard() {
   const router = useRouter()
   const [activeSection, setActiveSection] = useState("overview")
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const [approvedPOs, setApprovedPOs] = useState(getApprovedPOs())
-  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [approvedPOs, setApprovedPOs] = useState<any[]>([])
+  const [currentUser, setCurrentUser] = useState(getCurrentUser())
   const [showTutorialDialog, setShowTutorialDialog] = useState(false)
   const [activeTutorial, setActiveTutorial] = useState<string | null>(null)
   const [tutorialsEnabled, setTutorialsEnabled] = useState(false)
@@ -32,37 +31,47 @@ export default function TacticalDashboard() {
 
   // Check authentication
   useEffect(() => {
-    const checkAuth = async () => {
-      // Get userId from session storage or other auth mechanism
-      const userId = sessionStorage.getItem('userId')
-      if (!userId) {
-        router.push("/login")
-        return
-      }
-      
-      const user = await getCurrentUser(userId)
-      if (!user) {
-        router.push("/login")
-      } else {
-        setCurrentUser(user)
+    const user = getCurrentUser()
+    if (!user) {
+      router.push("/login")
+    } else {
+      setCurrentUser(user)
+    }
+  }, [router])
+
+  useEffect(() => {
+    async function loadApprovedPOs() {
+      try {
+        const pos = await getApprovedPOs()
+        setApprovedPOs(pos)
+      } catch (error) {
+        console.error("[v0] Error loading approved POs:", error)
+        setApprovedPOs([])
       }
     }
-    
-    checkAuth()
-  }, [router])
+    loadApprovedPOs()
+  }, [])
 
   // Refresh approved POs when returning to dashboard
   useEffect(() => {
     if (activeSection === "overview") {
-      setApprovedPOs(getApprovedPOs())
+      async function refreshPOs() {
+        try {
+          const pos = await getApprovedPOs()
+          setApprovedPOs(pos)
+        } catch (error) {
+          console.error("[v0] Error refreshing POs:", error)
+        }
+      }
+      refreshPOs()
     }
   }, [activeSection])
 
   useEffect(() => {
-    const justLoggedIn = sessionStorage.getItem('show_tutorial_dialog')
-    if (justLoggedIn === 'true') {
+    const justLoggedIn = sessionStorage.getItem("show_tutorial_dialog")
+    if (justLoggedIn === "true") {
       setShowTutorialDialog(true)
-      sessionStorage.removeItem('show_tutorial_dialog')
+      sessionStorage.removeItem("show_tutorial_dialog")
     }
   }, [])
 
@@ -78,14 +87,14 @@ export default function TacticalDashboard() {
 
   const handleTutorialComplete = () => {
     if (activeTutorial) {
-      setCompletedTutorials(prev => new Set([...prev, activeTutorial]))
+      setCompletedTutorials((prev) => new Set([...prev, activeTutorial]))
     }
     setActiveTutorial(null)
   }
 
   const handleSkipTutorial = () => {
     if (activeTutorial) {
-      setCompletedTutorials(prev => new Set([...prev, activeTutorial]))
+      setCompletedTutorials((prev) => new Set([...prev, activeTutorial]))
     }
     setActiveTutorial(null)
   }
@@ -95,7 +104,7 @@ export default function TacticalDashboard() {
     setTutorialsEnabled(true)
     // Start dashboard tutorial immediately
     setTimeout(() => {
-      setActiveTutorial('overview')
+      setActiveTutorial("overview")
     }, 300)
   }
 
@@ -104,151 +113,176 @@ export default function TacticalDashboard() {
     setTutorialsEnabled(false)
   }
 
-  const tours: Record<string, { target: string; title: string; description: string; position?: 'top' | 'bottom' | 'left' | 'right' }[]> = {
+  const tours: Record<
+    string,
+    { target: string; title: string; description: string; position?: "top" | "bottom" | "left" | "right" }[]
+  > = {
     overview: [
       {
         target: '[data-tour="dashboard-filters"]',
         title: "Smart Filters",
-        description: "Use these filters to narrow down your purchase orders by search term, branch, supplier, or category. The badge shows how many orders match your current filters.",
-        position: 'bottom'
+        description:
+          "Use these filters to narrow down your purchase orders by search term, branch, supplier, or category. The badge shows how many orders match your current filters.",
+        position: "bottom",
       },
       {
         target: '[data-tour="dashboard-metrics"]',
         title: "Key Metrics",
-        description: "At-a-glance view of your total spending, order count, average order value, and active suppliers across all approved purchase orders.",
-        position: 'bottom'
+        description:
+          "At-a-glance view of your total spending, order count, average order value, and active suppliers across all approved purchase orders.",
+        position: "bottom",
       },
       {
         target: '[data-tour="dashboard-charts"]',
         title: "Visual Analytics",
-        description: "Interactive charts showing spending by branch, top suppliers, and category distribution. Click on chart elements to explore specific segments.",
-        position: 'top'
+        description:
+          "Interactive charts showing spending by branch, top suppliers, and category distribution. Click on chart elements to explore specific segments.",
+        position: "top",
       },
       {
         target: '[data-tour="dashboard-recent"]',
         title: "Recent Orders",
-        description: "Quick access to your most recent purchase orders with key details. Click any row to see full order information.",
-        position: 'top'
-      }
+        description:
+          "Quick access to your most recent purchase orders with key details. Click any row to see full order information.",
+        position: "top",
+      },
     ],
     upload: [
       {
         target: '[data-tour="upload-csv"]',
         title: "Upload CSV Files",
-        description: "Drop your CSV file here or click to browse. The system automatically parses purchase order data and runs analysis to detect potential issues.",
-        position: 'right'
+        description:
+          "Drop your CSV file here or click to browse. The system automatically parses purchase order data and runs analysis to detect potential issues.",
+        position: "right",
       },
       {
         target: '[data-tour="upload-stats"]',
         title: "Upload Statistics",
-        description: "See real-time metrics about your uploaded purchase orders including total count, amounts, and detected issues organized by severity level.",
-        position: 'right'
+        description:
+          "See real-time metrics about your uploaded purchase orders including total count, amounts, and detected issues organized by severity level.",
+        position: "right",
       },
       {
         target: '[data-tour="upload-branch-filter"]',
         title: "Filter by Branch",
-        description: "Select specific branches to focus on particular locations. This helps you review orders for one branch at a time.",
-        position: 'bottom'
+        description:
+          "Select specific branches to focus on particular locations. This helps you review orders for one branch at a time.",
+        position: "bottom",
       },
       {
         target: '[data-tour="upload-po-list"]',
         title: "Review Purchase Orders",
-        description: "All uploaded POs appear here. Items with flags are highlighted with colored borders. Click any PO to see detailed analysis, price comparisons, and issue explanations.",
-        position: 'top'
+        description:
+          "All uploaded POs appear here. Items with flags are highlighted with colored borders. Click any PO to see detailed analysis, price comparisons, and issue explanations.",
+        position: "top",
       },
       {
         target: '[data-tour="upload-actions"]',
         title: "Bulk Actions",
-        description: "Select multiple POs using checkboxes, then approve or delete them in bulk. Approved orders are added to your database for trend analysis.",
-        position: 'bottom'
-      }
+        description:
+          "Select multiple POs using checkboxes, then approve or delete them in bulk. Approved orders are added to your database for trend analysis.",
+        position: "bottom",
+      },
     ],
     reports: [
       {
         target: '[data-tour="reports-metrics"]',
         title: "Key Performance Indicators",
-        description: "Track essential metrics including total spend, order count, average PO value, and active suppliers at a glance.",
-        position: 'bottom'
+        description:
+          "Track essential metrics including total spend, order count, average PO value, and active suppliers at a glance.",
+        position: "bottom",
       },
       {
         target: '[data-tour="reports-spending"]',
         title: "Spending Analysis",
-        description: "Visualize spending patterns by category, supplier, and over time to identify trends and optimize procurement strategy.",
-        position: 'bottom'
+        description:
+          "Visualize spending patterns by category, supplier, and over time to identify trends and optimize procurement strategy.",
+        position: "bottom",
       },
       {
         target: '[data-tour="reports-performance"]',
         title: "Supplier Performance",
-        description: "Evaluate supplier metrics including on-time delivery rates, lead times, and price variance to make informed sourcing decisions.",
-        position: 'top'
+        description:
+          "Evaluate supplier metrics including on-time delivery rates, lead times, and price variance to make informed sourcing decisions.",
+        position: "top",
       },
       {
         target: '[data-tour="reports-risk"]',
         title: "Risk Management",
-        description: "Identify concentration risks and single-source dependencies to mitigate supply chain vulnerabilities.",
-        position: 'top'
-      }
+        description:
+          "Identify concentration risks and single-source dependencies to mitigate supply chain vulnerabilities.",
+        position: "top",
+      },
     ],
     agents: [
       {
         target: '[data-tour="trends-filters"]',
         title: "Analysis Controls",
-        description: "Filter your trend analysis by time period (daily, weekly, monthly, yearly), branch, and item category to focus on specific segments.",
-        position: 'bottom'
+        description:
+          "Filter your trend analysis by time period (daily, weekly, monthly, yearly), branch, and item category to focus on specific segments.",
+        position: "bottom",
       },
       {
         target: '[data-tour="trends-summary"]',
         title: "Trend Summary Cards",
-        description: "Key trend indicators showing total orders, spending trends, and detected anomalies. The percentages show changes over your selected time period.",
-        position: 'bottom'
+        description:
+          "Key trend indicators showing total orders, spending trends, and detected anomalies. The percentages show changes over your selected time period.",
+        position: "bottom",
       },
       {
         target: '[data-tour="trends-charts"]',
         title: "Spending Analysis",
-        description: "Visual breakdown of spending by branch and category. These charts help identify where resources are being allocated.",
-        position: 'top'
+        description:
+          "Visual breakdown of spending by branch and category. These charts help identify where resources are being allocated.",
+        position: "top",
       },
       {
         target: '[data-tour="trends-anomalies"]',
         title: "Anomaly Detection",
-        description: "Automatically detected unusual patterns in your purchase orders. Click any anomaly card to see detailed analysis, related orders, and suggested actions.",
-        position: 'top'
-      }
+        description:
+          "Automatically detected unusual patterns in your purchase orders. Click any anomaly card to see detailed analysis, related orders, and suggested actions.",
+        position: "top",
+      },
     ],
     intelligence: [
       {
         target: '[data-tour="ai-sidebar-toggle"]',
         title: "Chat History",
-        description: "Toggle this sidebar to view all your previous AI conversations, search through them, or start new chats. Each conversation is automatically saved and titled.",
-        position: 'right'
+        description:
+          "Toggle this sidebar to view all your previous AI conversations, search through them, or start new chats. Each conversation is automatically saved and titled.",
+        position: "right",
       },
       {
         target: '[data-tour="ai-chat-area"]',
         title: "AI-Powered Analysis",
-        description: "Ask questions about your purchase order data in natural language. The AI has access to all your approved orders and can help identify patterns, compare suppliers, and provide insights.",
-        position: 'top'
+        description:
+          "Ask questions about your purchase order data in natural language. The AI has access to all your approved orders and can help identify patterns, compare suppliers, and provide insights.",
+        position: "top",
       },
       {
         target: '[data-tour="ai-suggestions"]',
         title: "Suggested Questions",
-        description: "Not sure what to ask? Click these suggested questions to get started. They cover common analysis tasks like finding duplicate orders or comparing supplier pricing.",
-        position: 'top'
-      }
+        description:
+          "Not sure what to ask? Click these suggested questions to get started. They cover common analysis tasks like finding duplicate orders or comparing supplier pricing.",
+        position: "top",
+      },
     ],
     systems: [
       {
         target: '[data-tour="profile-icon"]',
         title: "Profile Settings",
-        description: "Click the profile icon in the top-right to manage your account, update personal information, or sign out.",
-        position: 'left'
+        description:
+          "Click the profile icon in the top-right to manage your account, update personal information, or sign out.",
+        position: "left",
       },
       {
         target: '[data-tour="notification-bell"]',
         title: "Notifications",
-        description: "Get alerts when new POs are uploaded and need review, or when anomalies are detected in your data.",
-        position: 'left'
-      }
-    ]
+        description:
+          "Get alerts when new POs are uploaded and need review, or when anomalies are detected in your data.",
+        position: "left",
+      },
+    ],
   }
 
   if (!currentUser) {
@@ -338,7 +372,7 @@ export default function TacticalDashboard() {
           </div>
           <div className="flex items-center gap-4">
             <div className="text-xs text-muted-foreground">
-              {new Date().toLocaleDateString('en-IN', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+              {new Date().toLocaleDateString("en-IN", { year: "numeric", month: "2-digit", day: "2-digit" })}
             </div>
             <div data-tour="notification-bell">
               <NotificationBell />
@@ -362,10 +396,7 @@ export default function TacticalDashboard() {
 
       {/* Tutorial Dialogs */}
       {showTutorialDialog && (
-        <SkipTutorialsDialog
-          onContinue={handleAcceptTutorials}
-          onSkipAll={handleDeclineTutorials}
-        />
+        <SkipTutorialsDialog onContinue={handleAcceptTutorials} onSkipAll={handleDeclineTutorials} />
       )}
 
       {activeTutorial && tours[activeTutorial] && (

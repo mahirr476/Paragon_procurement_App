@@ -9,14 +9,19 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "User ID required" }, { status: 400 })
     }
 
-    const notifications = await prisma.notification.findMany({
+    const sessions = await prisma.chatSession.findMany({
       where: { userId },
-      orderBy: { createdAt: "desc" },
+      include: {
+        messages: {
+          orderBy: { timestamp: "asc" },
+        },
+      },
+      orderBy: { updatedAt: "desc" },
     })
 
-    return NextResponse.json({ success: true, notifications })
+    return NextResponse.json({ success: true, sessions })
   } catch (error) {
-    console.error("[v0] Get notifications error:", error)
+    console.error("[v0] Get chat sessions error:", error)
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 },
@@ -26,23 +31,21 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId, type, title, message, count, severity, link } = await req.json()
+    const { userId, title } = await req.json()
 
-    const notification = await prisma.notification.create({
+    const session = await prisma.chatSession.create({
       data: {
         userId,
-        type,
         title,
-        message,
-        count,
-        severity,
-        link,
+      },
+      include: {
+        messages: true,
       },
     })
 
-    return NextResponse.json({ success: true, notification })
+    return NextResponse.json({ success: true, session })
   } catch (error) {
-    console.error("[v0] Create notification error:", error)
+    console.error("[v0] Create chat session error:", error)
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 },
@@ -52,16 +55,21 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const { notificationId, read } = await req.json()
+    const { sessionId, updates } = await req.json()
 
-    const notification = await prisma.notification.update({
-      where: { id: notificationId },
-      data: { read },
+    const session = await prisma.chatSession.update({
+      where: { id: sessionId },
+      data: updates,
+      include: {
+        messages: {
+          orderBy: { timestamp: "asc" },
+        },
+      },
     })
 
-    return NextResponse.json({ success: true, notification })
+    return NextResponse.json({ success: true, session })
   } catch (error) {
-    console.error("[v0] Update notification error:", error)
+    console.error("[v0] Update chat session error:", error)
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 },
@@ -71,19 +79,19 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const notificationId = req.nextUrl.searchParams.get("id")
+    const sessionId = req.nextUrl.searchParams.get("sessionId")
 
-    if (!notificationId) {
-      return NextResponse.json({ success: false, error: "Notification ID required" }, { status: 400 })
+    if (!sessionId) {
+      return NextResponse.json({ success: false, error: "Session ID required" }, { status: 400 })
     }
 
-    await prisma.notification.delete({
-      where: { id: notificationId },
+    await prisma.chatSession.delete({
+      where: { id: sessionId },
     })
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("[v0] Delete notification error:", error)
+    console.error("[v0] Delete chat session error:", error)
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 },

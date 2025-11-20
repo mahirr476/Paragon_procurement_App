@@ -1,5 +1,5 @@
 import { generateText } from 'ai'
-import { getCurrentPOs, getApprovedPOs } from '@/lib/storage-server'
+import { getCurrentPOs, getApprovedPOs } from '@/lib/storage'
 
 export async function POST(request: Request) {
   try {
@@ -9,8 +9,8 @@ export async function POST(request: Request) {
       return Response.json({ error: 'Invalid query' }, { status: 400 })
     }
 
-    const currentPOs = await getCurrentPOs()
-    const approvedPOs = await getApprovedPOs()
+    const currentPOs = getCurrentPOs()
+    const approvedPOs = getApprovedPOs()
 
     // Prepare context for AI
     const poContext = {
