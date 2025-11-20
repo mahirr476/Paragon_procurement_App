@@ -1,12 +1,14 @@
 "use client"
 
+import type React from "react"
+
 import { useState } from "react"
-import { useRouter } from 'next/navigation'
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Shield, AlertCircle } from 'lucide-react'
+import { Shield, AlertCircle } from "lucide-react"
 import { loginUser } from "@/lib/auth"
 import Link from "next/link"
 
@@ -22,16 +24,20 @@ export default function LoginPage() {
     setError("")
     setLoading(true)
 
+    console.log("[v0] Login attempt with:", email)
+
     if (!email || !password) {
       setError("Please fill in all fields")
       setLoading(false)
       return
     }
 
-    const result = loginUser(email, password)
+    const result = await loginUser(email, password)
+
+    console.log("[v0] Login result:", result)
 
     if (result.success) {
-      sessionStorage.setItem('show_tutorial_dialog', 'true')
+      sessionStorage.setItem("show_tutorial_dialog", "true")
       router.push("/")
     } else {
       setError(result.error || "Login failed")
@@ -65,7 +71,9 @@ export default function LoginPage() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <Label htmlFor="email" className="text-muted-foreground">Email</Label>
+              <Label htmlFor="email" className="text-muted-foreground">
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -77,7 +85,9 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <Label htmlFor="password" className="text-muted-foreground">Password</Label>
+              <Label htmlFor="password" className="text-muted-foreground">
+                Password
+              </Label>
               <Input
                 id="password"
                 type="password"
@@ -108,9 +118,7 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-muted-foreground/60 text-xs mt-6">
-          v1.0 Procurement Management System
-        </p>
+        <p className="text-center text-muted-foreground/60 text-xs mt-6">v1.0 Procurement Management System</p>
       </div>
     </div>
   )

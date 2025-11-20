@@ -1,40 +1,50 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CSVUploader } from "@/components/csv-uploader"
 import { POComparison } from "@/components/po-comparison"
 import { DashboardStats } from "@/components/dashboard-stats"
-import { PurchaseOrder } from "@/lib/types"
+import type { PurchaseOrder } from "@/lib/types"
 import { getApprovedPOs, getCurrentPOs, addToApprovedPOs, clearCurrentPOs } from "@/lib/storage"
-import { CheckCircle, Trash2 } from 'lucide-react'
+import { CheckCircle, Trash2 } from "lucide-react"
 
 export default function CommandCenterPage() {
-  const [currentPOs, setCurrentPOs] = useState<PurchaseOrder[]>(getCurrentPOs())
-  const [approvedPOs, setApprovedPOs] = useState<PurchaseOrder[]>(getApprovedPOs())
+  const [currentPOs, setCurrentPOs] = useState<PurchaseOrder[]>([])
+  const [approvedPOs, setApprovedPOs] = useState<PurchaseOrder[]>([])
   const [uploadCount, setUploadCount] = useState(0)
 
-  const handleUploadSuccess = (count: number) => {
+  useEffect(() => {
+    const loadPOs = async () => {
+      const [current, approved] = await Promise.all([getCurrentPOs(), getApprovedPOs()])
+      setCurrentPOs(current)
+      setApprovedPOs(approved)
+    }
+    loadPOs()
+  }, [])
+
+  const handleUploadSuccess = async (count: number) => {
     setUploadCount(count)
-    setCurrentPOs(getCurrentPOs())
+    const current = await getCurrentPOs()
+    setCurrentPOs(current)
   }
 
-  const handleApprovePOs = () => {
-    const toApprove = currentPOs.map(po => ({ ...po, isApproved: true }))
-    addToApprovedPOs(toApprove)
-    setApprovedPOs([...approvedPOs, ...toApprove])
-    clearCurrentPOs()
+  const handleApprovePOs = async () => {
+    const toApprove = currentPOs.map((po) => ({ ...po, isApproved: true }))
+    await addToApprovedPOs(toApprove)
+    const approved = await getApprovedPOs()
+    setApprovedPOs(approved)
+    await clearCurrentPOs()
     setCurrentPOs([])
     setUploadCount(0)
   }
 
-  const handleRejectPOs = () => {
-    clearCurrentPOs()
+  const handleRejectPOs = async () => {
+    await clearCurrentPOs()
     setCurrentPOs([])
     setUploadCount(0)
   }
-
 
   return (
     <div className="p-6 space-y-6">
@@ -47,16 +57,13 @@ export default function CommandCenterPage() {
       </div>
 
       {/* Stats */}
-      {currentPOs.length > 0 && (
-        <DashboardStats currentPOs={currentPOs} approvedPOs={approvedPOs} />
-      )}
+      {currentPOs.length > 0 && <DashboardStats currentPOs={currentPOs} approvedPOs={approvedPOs} />}
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Upload Section */}
         <div className="lg:col-span-1 space-y-4">
           <CSVUploader onUploadSuccess={handleUploadSuccess} />
-
 
           {uploadCount > 0 && (
             <Card className="bg-neutral-900 border-neutral-700">
@@ -65,9 +72,7 @@ export default function CommandCenterPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="bg-orange-500/10 border border-orange-500/20 rounded p-4">
-                  <p className="text-sm text-orange-300">
-                    {uploadCount} purchase orders uploaded and analyzed
-                  </p>
+                  <p className="text-sm text-orange-300">{uploadCount} purchase orders uploaded and analyzed</p>
                 </div>
 
                 <div className="space-y-2">

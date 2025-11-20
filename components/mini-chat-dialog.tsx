@@ -1,11 +1,11 @@
-'use client'
+"use client"
 
-import { useState, useRef, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { X, Send, Loader2, Sparkles, Minimize2 } from 'lucide-react'
-import { ChatMessage } from '@/lib/types'
-import { getCurrentPOs, getApprovedPOs } from '@/lib/storage'
+import { useState, useRef, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { X, Send, Loader2, Sparkles, Minimize2 } from "lucide-react"
+import type { ChatMessage } from "@/lib/types"
+import { getCurrentPOs, getApprovedPOs } from "@/lib/storage"
 
 interface MiniChatDialogProps {
   onClose: () => void
@@ -13,13 +13,13 @@ interface MiniChatDialogProps {
 
 export function MiniChatDialog({ onClose }: MiniChatDialogProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [input, setInput] = useState('')
+  const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
   useEffect(() => {
@@ -31,48 +31,48 @@ export function MiniChatDialog({ onClose }: MiniChatDialogProps) {
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
-      role: 'user',
+      role: "user",
       content: input,
       timestamp: new Date(),
     }
 
-    setMessages(prev => [...prev, userMessage])
-    setInput('')
+    setMessages((prev) => [...prev, userMessage])
+    setInput("")
     setIsLoading(true)
 
     try {
-      const currentPOs = getCurrentPOs()
-      const approvedPOs = getApprovedPOs()
-      
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+      const currentPOs = await getCurrentPOs()
+      const approvedPOs = await getApprovedPOs()
+
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           query: input,
           currentPOs: currentPOs.length,
-          approvedPOs: approvedPOs.length
+          approvedPOs: approvedPOs.length,
         }),
       })
 
-      if (!response.ok) throw new Error('Analysis failed')
+      if (!response.ok) throw new Error("Analysis failed")
 
       const data = await response.json()
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        role: 'assistant',
+        role: "assistant",
         content: data.analysis,
         timestamp: new Date(),
       }
 
-      setMessages(prev => [...prev, assistantMessage])
+      setMessages((prev) => [...prev, assistantMessage])
     } catch (err) {
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'Sorry, I encountered an error analyzing your request.',
+        role: "assistant",
+        content: "Sorry, I encountered an error analyzing your request.",
         timestamp: new Date(),
       }
-      setMessages(prev => [...prev, errorMessage])
+      setMessages((prev) => [...prev, errorMessage])
     } finally {
       setIsLoading(false)
     }
@@ -80,8 +80,10 @@ export function MiniChatDialog({ onClose }: MiniChatDialogProps) {
 
   if (isMinimized) {
     return (
-      <div className="fixed bottom-24 right-6 w-80 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-2xl z-50 p-4 cursor-pointer hover:scale-105 transition-transform"
-           onClick={() => setIsMinimized(false)}>
+      <div
+        className="fixed bottom-24 right-6 w-80 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl shadow-2xl z-50 p-4 cursor-pointer hover:scale-105 transition-transform"
+        onClick={() => setIsMinimized(false)}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-white/20 p-2 rounded-xl backdrop-blur-sm">
@@ -152,13 +154,13 @@ export function MiniChatDialog({ onClose }: MiniChatDialogProps) {
                 <p className="text-sm text-neutral-400">Ask me about patterns, anomalies, or insights</p>
               </div>
               <div className="grid grid-cols-1 gap-2 text-left">
-                <button 
+                <button
                   onClick={() => setInput("Show me top spending branches")}
                   className="text-xs text-neutral-400 hover:text-orange-400 bg-neutral-800/50 hover:bg-neutral-800 border border-neutral-700 hover:border-orange-500/50 rounded-lg p-3 transition-all text-left"
                 >
                   Show me top spending branches
                 </button>
-                <button 
+                <button
                   onClick={() => setInput("Any price anomalies this month?")}
                   className="text-xs text-neutral-400 hover:text-orange-400 bg-neutral-800/50 hover:bg-neutral-800 border border-neutral-700 hover:border-orange-500/50 rounded-lg p-3 transition-all text-left"
                 >
@@ -169,15 +171,12 @@ export function MiniChatDialog({ onClose }: MiniChatDialogProps) {
           </div>
         ) : (
           messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
+            <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
               <div
                 className={`max-w-[85%] px-4 py-3 rounded-2xl text-sm shadow-lg ${
-                  msg.role === 'user'
-                    ? 'bg-gradient-to-br from-orange-500 to-orange-600 text-white'
-                    : 'bg-neutral-800 border border-neutral-700 text-neutral-100'
+                  msg.role === "user"
+                    ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white"
+                    : "bg-neutral-800 border border-neutral-700 text-neutral-100"
                 }`}
               >
                 <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
@@ -204,7 +203,7 @@ export function MiniChatDialog({ onClose }: MiniChatDialogProps) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
+              if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault()
                 handleSend()
               }

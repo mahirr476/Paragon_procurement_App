@@ -4,27 +4,41 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { MessageSquare, Trash2, Plus, Search, Sparkles, Calendar, ChevronLeft, ChevronRight, Send, Loader2 } from 'lucide-react'
+import {
+  MessageSquare,
+  Trash2,
+  Plus,
+  Search,
+  Sparkles,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Send,
+  Loader2,
+} from "lucide-react"
 import { getChatSessions, saveChatSession, deleteChatSession, generateChatTitle } from "@/lib/storage"
-import { ChatSession, ChatMessage } from "@/lib/types"
+import type { ChatSession, ChatMessage } from "@/lib/types"
 
 export default function IntelligencePage() {
   const [sessions, setSessions] = useState<ChatSession[]>([])
   const [activeSession, setActiveSession] = useState<ChatSession | null>(null)
-  const [input, setInput] = useState('')
+  const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
+  const [searchTerm, setSearchTerm] = useState("")
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
   useEffect(() => {
-    setSessions(getChatSessions())
+    const loadSessions = async () => {
+      const loadedSessions = await getChatSessions("default-user")
+      setSessions(Array.isArray(loadedSessions) ? loadedSessions : [])
+    }
+    loadSessions()
   }, [])
 
   const createNewChat = () => {
     const newSession: ChatSession = {
       id: Date.now().toString(),
-      title: 'New Chat',
+      title: "New Chat",
       messages: [],
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -37,7 +51,7 @@ export default function IntelligencePage() {
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
-      role: 'user',
+      role: "user",
       content: input,
       timestamp: new Date(),
     }
@@ -50,22 +64,22 @@ export default function IntelligencePage() {
     }
 
     setActiveSession(updatedSession)
-    setInput('')
+    setInput("")
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: input }),
       })
 
-      if (!response.ok) throw new Error('Analysis failed')
+      if (!response.ok) throw new Error("Analysis failed")
 
       const data = await response.json()
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        role: 'assistant',
+        role: "assistant",
         content: data.analysis,
         timestamp: new Date(),
       }
@@ -77,26 +91,28 @@ export default function IntelligencePage() {
       }
 
       setActiveSession(finalSession)
-      saveChatSession(finalSession)
-      setSessions(getChatSessions())
+      await saveChatSession("default-user", finalSession)
+      const updatedSessions = await getChatSessions("default-user")
+      setSessions(Array.isArray(updatedSessions) ? updatedSessions : [])
     } catch (err) {
-      console.error('[v0] AI analysis error:', err)
+      console.error("[v0] AI analysis error:", err)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleDeleteChat = (sessionId: string) => {
-    deleteChatSession(sessionId)
-    setSessions(getChatSessions())
+  const handleDeleteChat = async (sessionId: string) => {
+    await deleteChatSession(sessionId)
+    const updatedSessions = await getChatSessions("default-user")
+    setSessions(Array.isArray(updatedSessions) ? updatedSessions : [])
     if (activeSession?.id === sessionId) {
       setActiveSession(null)
     }
   }
 
-  const filteredSessions = sessions.filter(s => 
-    s.title.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredSessions = Array.isArray(sessions)
+    ? sessions.filter((s) => s.title.toLowerCase().includes(searchTerm.toLowerCase()))
+    : []
 
   return (
     <div className="p-6 h-screen flex gap-6 relative">
@@ -111,7 +127,7 @@ export default function IntelligencePage() {
 
       <div
         className={`transition-all duration-300 ease-in-out ${
-          isSidebarOpen ? 'w-80 opacity-100' : 'w-0 opacity-0 -ml-6'
+          isSidebarOpen ? "w-80 opacity-100" : "w-0 opacity-0 -ml-6"
         }`}
       >
         {isSidebarOpen && (
@@ -122,11 +138,7 @@ export default function IntelligencePage() {
                   <MessageSquare className="w-4 h-4" />
                   Chat History
                 </CardTitle>
-                <Button
-                  onClick={createNewChat}
-                  size="sm"
-                  className="bg-accent hover:bg-accent/90 h-8"
-                >
+                <Button onClick={createNewChat} size="sm" className="bg-accent hover:bg-accent/90 h-8">
                   <Plus className="w-4 h-4 mr-1" />
                   New
                 </Button>
@@ -153,16 +165,14 @@ export default function IntelligencePage() {
                     key={session.id}
                     className={`group p-3 rounded-lg border cursor-pointer transition-colors ${
                       activeSession?.id === session.id
-                        ? 'bg-accent/20 border-accent/50'
-                        : 'bg-card-hover border-border hover:border-muted-foreground'
+                        ? "bg-accent/20 border-accent/50"
+                        : "bg-card-hover border-border hover:border-muted-foreground"
                     }`}
                     onClick={() => setActiveSession(session)}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-foreground font-medium truncate mb-1">
-                          {session.title}
-                        </p>
+                        <p className="text-sm text-foreground font-medium truncate mb-1">{session.title}</p>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />
@@ -198,7 +208,7 @@ export default function IntelligencePage() {
         <CardHeader className="border-b border-border">
           <CardTitle className="text-sm font-medium text-foreground flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-accent" />
-            {activeSession ? activeSession.title : 'AI Procurement Analysis'}
+            {activeSession ? activeSession.title : "AI Procurement Analysis"}
           </CardTitle>
           {activeSession && (
             <p className="text-xs text-muted-foreground mt-1">
@@ -214,10 +224,7 @@ export default function IntelligencePage() {
                 <Sparkles className="w-12 h-12 text-accent mx-auto mb-3" />
                 <p className="text-foreground mb-2">Welcome to AI Analysis</p>
                 <p className="text-sm text-muted-foreground mb-4">Start a new chat to analyze your purchase orders</p>
-                <Button
-                  onClick={createNewChat}
-                  className="bg-accent hover:bg-accent/90"
-                >
+                <Button onClick={createNewChat} className="bg-accent hover:bg-accent/90">
                   <Plus className="w-4 h-4 mr-2" />
                   Start New Chat
                 </Button>
@@ -227,19 +234,18 @@ export default function IntelligencePage() {
             <>
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {activeSession.messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
+                  <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                     <div
                       className={`max-w-2xl px-4 py-3 rounded-lg ${
-                        msg.role === 'user'
-                          ? 'bg-accent/20 border border-accent/50 text-accent-foreground'
-                          : 'bg-card-hover border border-border text-foreground'
+                        msg.role === "user"
+                          ? "bg-accent/20 border border-accent/50 text-accent-foreground"
+                          : "bg-card-hover border border-border text-foreground"
                       }`}
                     >
                       <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                      <p className={`text-xs mt-2 ${msg.role === 'user' ? 'text-accent-foreground/70' : 'text-muted-foreground'}`}>
+                      <p
+                        className={`text-xs mt-2 ${msg.role === "user" ? "text-accent-foreground/70" : "text-muted-foreground"}`}
+                      >
                         {new Date(msg.timestamp).toLocaleTimeString()}
                       </p>
                     </div>
@@ -261,7 +267,7 @@ export default function IntelligencePage() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyPress={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
+                      if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault()
                         handleSendMessage()
                       }

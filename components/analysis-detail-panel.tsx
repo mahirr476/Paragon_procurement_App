@@ -46,7 +46,7 @@ export function AnalysisDetailPanel({ po, issues, onClose, onResolve }: Analysis
                 <div>
                   <p className="text-xs text-neutral-500">Historical Average</p>
                   <p className="text-lg font-mono text-white">৳{(issue.details.avgRate as number)?.toFixed(2)}</p>
-                  <p className="text-xs text-neutral-500">Based on {issue.details.historicalCount} orders</p>
+                  <p className="text-xs text-neutral-500">Based on {issue.details.historicalCount as number} orders</p>
                 </div>
                 <div>
                   <p className="text-xs text-neutral-500">Current Rate</p>
@@ -69,7 +69,7 @@ export function AnalysisDetailPanel({ po, issues, onClose, onResolve }: Analysis
           <div className="space-y-4">
             <div className="bg-neutral-800 rounded p-4">
               <h4 className="text-sm font-medium text-neutral-300 mb-2">Duplicate Information</h4>
-              <p className="text-sm text-white">Order No: <span className="font-mono text-orange-400">{issue.details.orderNo}</span></p>
+              <p className="text-sm text-white">Order No: <span className="font-mono text-orange-400">{issue.details.orderNo as string}</span></p>
               <p className="text-xs text-neutral-500 mt-2">Found {(issue.details.duplicateIds as string[])?.length} matching order(s) in current batch</p>
             </div>
             <div className="bg-orange-500/10 border border-orange-500/20 rounded p-4">
@@ -112,7 +112,7 @@ export function AnalysisDetailPanel({ po, issues, onClose, onResolve }: Analysis
             <div className="space-y-4">
               <div className="bg-neutral-800 rounded p-4">
                 <h4 className="text-sm font-medium text-neutral-300 mb-2">New Supplier Detection</h4>
-                <p className="text-sm text-white">Supplier: <span className="font-mono text-orange-400">{issue.details.newSupplier}</span></p>
+                <p className="text-sm text-white">Supplier: <span className="font-mono text-orange-400">{issue.details.newSupplier as string}</span></p>
               </div>
               <div className="bg-yellow-500/10 border border-yellow-500/20 rounded p-4">
                 <p className="text-sm text-yellow-300">

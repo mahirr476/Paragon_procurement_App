@@ -1,15 +1,14 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { Geist_Mono as GeistMono } from 'next/font/google'
+import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 import { ChatSidebar } from "@/components/chat-sidebar"
 
-const geistMono = GeistMono({ subsets: ["latin"] })
+const geistMono = GeistMono
 
 export const metadata: Metadata = {
   title: "Tactical Operations Dashboard",
   description: "Tactical command and control system",
-    generator: 'v0.app'
 }
 
 export default function RootLayout({
