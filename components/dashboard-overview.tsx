@@ -8,13 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PurchaseOrder } from "@/lib/types"
 import { BarChart3, Search, TrendingUp, Package, Building2, DollarSign, X } from 'lucide-react'
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts'
-import {
-  Tooltip,
-  TooltipRoot,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider
-} from '@/components/ui/tooltip'
+import { Tooltip } from '@/components/ui/tooltip'
 
 interface DashboardOverviewProps {
   approvedPOs: PurchaseOrder[]
@@ -306,10 +300,10 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" angle={-45} textAnchor="end" height={100} />
                 <YAxis stroke="hsl(var(--muted-foreground))" />
-                <Tooltip 
+                {/* <Tooltip 
                   contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
                   labelStyle={{ color: 'hsl(var(--card-foreground))' }}
-                />
+                /> */}
                 <Bar dataKey="value" fill="hsl(var(--accent))" />
               </BarChart>
             </ResponsiveContainer>
@@ -326,10 +320,10 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis type="number" stroke="hsl(var(--muted-foreground))" />
                 <YAxis dataKey="name" type="category" stroke="hsl(var(--muted-foreground))" width={120} />
-                <Tooltip 
+                {/* <Tooltip 
                   contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
                   labelStyle={{ color: 'hsl(var(--card-foreground))' }}
-                />
+                /> */}
                 <Bar dataKey="value" fill="hsl(var(--accent))" />
               </BarChart>
             </ResponsiveContainer>
@@ -348,7 +342,7 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
                   outerRadius={100}
                   fill="#8884d8"
                   dataKey="value"
@@ -357,10 +351,10 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip 
+                {/* <Tooltip 
                   contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
                   labelStyle={{ color: 'hsl(var(--card-foreground))' }}
-                />
+                /> */}
               </PieChart>
             </ResponsiveContainer>
           </CardContent>

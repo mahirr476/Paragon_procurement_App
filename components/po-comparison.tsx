@@ -1,15 +1,15 @@
-'use client'
+"use client"
 
-import { useState, useMemo } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { AlertTriangle, CheckCircle, Trash2, Building2, PackageOpen } from 'lucide-react'
-import { PurchaseOrder, AnalysisResult } from '@/lib/types'
-import { analyzeOrders } from '@/lib/analysis'
-import { AnalysisDetailPanel } from './analysis-detail-panel'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useState, useMemo } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { AlertTriangle, CheckCircle, Trash2, Building2, PackageOpen } from "lucide-react"
+import type { PurchaseOrder, AnalysisResult } from "@/lib/types"
+import { analyzeOrders } from "@/lib/analysis"
+import { AnalysisDetailPanel } from "./analysis-detail-panel"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface POComparisonProps {
   currentPOs: PurchaseOrder[]
@@ -25,28 +25,30 @@ interface POGroup {
   pos: PurchaseOrder[]
 }
 
-export function POComparison({ currentPOs, approvedPOs, onApprove, onDelete }: POComparisonProps) {
+export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onDelete }: POComparisonProps) {
   const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null)
   const [resolvedIssues, setResolvedIssues] = useState<Set<string>>(new Set())
-  const [selectedBranch, setSelectedBranch] = useState<string>('all')
+  const [selectedBranch, setSelectedBranch] = useState<string>("all")
   const [selectedPOIds, setSelectedPOIds] = useState<Set<string>>(new Set())
 
   const branches = useMemo(() => {
-    const branchSet = new Set(currentPOs.map(po => po.branch).filter(Boolean))
+    if (!Array.isArray(currentPOs)) return []
+    const branchSet = new Set(currentPOs.map((po) => po.branch).filter(Boolean))
     return Array.from(branchSet).sort()
   }, [currentPOs])
 
   const filteredPOs = useMemo(() => {
-    if (selectedBranch === 'all') return currentPOs
-    return currentPOs.filter(po => po.branch === selectedBranch)
+    if (!Array.isArray(currentPOs)) return []
+    if (selectedBranch === "all") return currentPOs
+    return currentPOs.filter((po) => po.branch === selectedBranch)
   }, [currentPOs, selectedBranch])
 
   const groupedPOs = useMemo(() => {
     const groups = new Map<string, POGroup>()
-    
-    filteredPOs.forEach(po => {
+
+    filteredPOs.forEach((po) => {
       const key = `${po.supplier}-${po.totalAmount}`
-      
+
       if (groups.has(key)) {
         const group = groups.get(key)!
         group.pos.push(po)
@@ -55,17 +57,18 @@ export function POComparison({ currentPOs, approvedPOs, onApprove, onDelete }: P
           id: key,
           supplier: po.supplier,
           totalAmount: po.totalAmount,
-          pos: [po]
+          pos: [po],
         })
       }
     })
-    
+
     return Array.from(groups.values())
   }, [filteredPOs])
 
   const allIssues = useMemo(() => {
+    if (!Array.isArray(filteredPOs) || !Array.isArray(approvedPOs)) return []
     return analyzeOrders(filteredPOs, approvedPOs)
-      .filter(issue => !resolvedIssues.has(issue.poId))
+      .filter((issue) => !resolvedIssues.has(issue.poId))
       .sort((a, b) => {
         const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 }
         return severityOrder[a.severity] - severityOrder[b.severity]
@@ -74,7 +77,7 @@ export function POComparison({ currentPOs, approvedPOs, onApprove, onDelete }: P
 
   const poIssuesMap = useMemo(() => {
     const map = new Map<string, AnalysisResult[]>()
-    allIssues.forEach(issue => {
+    allIssues.forEach((issue) => {
       const existing = map.get(issue.poId) || []
       map.set(issue.poId, [...existing, issue])
     })
@@ -82,14 +85,14 @@ export function POComparison({ currentPOs, approvedPOs, onApprove, onDelete }: P
   }, [allIssues])
 
   const handleResolve = (issueId: string) => {
-    setResolvedIssues(prev => new Set([...prev, issueId]))
+    setResolvedIssues((prev) => new Set([...prev, issueId]))
     setSelectedPO(null)
   }
 
   const handleSelectGroup = (group: POGroup, checked: boolean) => {
-    setSelectedPOIds(prev => {
+    setSelectedPOIds((prev) => {
       const newSet = new Set(prev)
-      group.pos.forEach(po => {
+      group.pos.forEach((po) => {
         if (checked) {
           newSet.add(po.id)
         } else {
@@ -101,17 +104,17 @@ export function POComparison({ currentPOs, approvedPOs, onApprove, onDelete }: P
   }
 
   const isGroupSelected = (group: POGroup) => {
-    return group.pos.every(po => selectedPOIds.has(po.id))
+    return group.pos.every((po) => selectedPOIds.has(po.id))
   }
 
   const isGroupPartiallySelected = (group: POGroup) => {
-    const selected = group.pos.filter(po => selectedPOIds.has(po.id))
+    const selected = group.pos.filter((po) => selectedPOIds.has(po.id))
     return selected.length > 0 && selected.length < group.pos.length
   }
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedPOIds(new Set(filteredPOs.map(po => po.id)))
+      setSelectedPOIds(new Set(filteredPOs.map((po) => po.id)))
     } else {
       setSelectedPOIds(new Set())
     }
@@ -131,39 +134,41 @@ export function POComparison({ currentPOs, approvedPOs, onApprove, onDelete }: P
     }
   }
 
-  const selectedPOIssues = selectedPO 
-    ? (poIssuesMap.get(selectedPO.id) || [])
-    : []
+  const selectedPOIssues = selectedPO ? poIssuesMap.get(selectedPO.id) || [] : []
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
-      case 'critical': return 'bg-red-500/20 text-red-500 border-red-500/30'
-      case 'high': return 'bg-orange-500/20 text-orange-500 border-orange-500/30'
-      case 'medium': return 'bg-yellow-500/20 text-yellow-500 border-yellow-500/30'
-      default: return 'bg-blue-500/20 text-blue-500 border-blue-500/30'
+      case "critical":
+        return "bg-red-500/20 text-red-500 border-red-500/30"
+      case "high":
+        return "bg-orange-500/20 text-orange-500 border-orange-500/30"
+      case "medium":
+        return "bg-yellow-500/20 text-yellow-500 border-yellow-500/30"
+      default:
+        return "bg-blue-500/20 text-blue-500 border-blue-500/30"
     }
   }
 
   const getHighestSeverity = (issues: AnalysisResult[]) => {
     if (issues.length === 0) return null
     const severityOrder = { critical: 0, high: 1, medium: 2, low: 3 }
-    return issues.reduce((highest, issue) => 
-      severityOrder[issue.severity] < severityOrder[highest.severity] ? issue : highest
+    return issues.reduce((highest, issue) =>
+      severityOrder[issue.severity] < severityOrder[highest.severity] ? issue : highest,
     )
   }
 
   const getGroupIssues = (group: POGroup) => {
     const issues: AnalysisResult[] = []
-    group.pos.forEach(po => {
+    group.pos.forEach((po) => {
       const poIssues = poIssuesMap.get(po.id) || []
       issues.push(...poIssues)
     })
     return issues
   }
 
-  const allSelected = filteredPOs.length > 0 && selectedPOIds.size === filteredPOs.length
+  const allSelected = Array.isArray(filteredPOs) && filteredPOs.length > 0 && selectedPOIds.size === filteredPOs.length
 
-  if (currentPOs.length === 0) {
+  if (!Array.isArray(currentPOs) || currentPOs.length === 0) {
     return (
       <Card className="bg-neutral-900 border-neutral-700">
         <CardContent className="p-8 text-center">
@@ -179,21 +184,13 @@ export function POComparison({ currentPOs, approvedPOs, onApprove, onDelete }: P
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4" data-tour="upload-actions">
-              <Checkbox
-                checked={allSelected}
-                onCheckedChange={handleSelectAll}
-                className="border-neutral-600"
-              />
+              <Checkbox checked={allSelected} onCheckedChange={handleSelectAll} className="border-neutral-600" />
               <CardTitle className="text-sm font-medium text-neutral-300 tracking-wider">
                 UPLOADED PURCHASE ORDERS ({filteredPOs.length})
-                {selectedPOIds.size > 0 && (
-                  <span className="ml-2 text-orange-500">
-                    {selectedPOIds.size} selected
-                  </span>
-                )}
+                {selectedPOIds.size > 0 && <span className="ml-2 text-orange-500">{selectedPOIds.size} selected</span>}
               </CardTitle>
             </div>
-            
+
             {branches.length > 0 && (
               <div className="flex items-center gap-2" data-tour="upload-branch-filter">
                 <Building2 className="w-4 h-4 text-neutral-500" />
@@ -205,8 +202,8 @@ export function POComparison({ currentPOs, approvedPOs, onApprove, onDelete }: P
                     <SelectItem value="all" className="text-white hover:bg-neutral-700">
                       All Branches ({currentPOs.length})
                     </SelectItem>
-                    {branches.map(branch => {
-                      const branchCount = currentPOs.filter(po => po.branch === branch).length
+                    {branches.map((branch) => {
+                      const branchCount = currentPOs.filter((po) => po.branch === branch).length
                       return (
                         <SelectItem key={branch} value={branch} className="text-white hover:bg-neutral-700">
                           {branch} ({branchCount})
@@ -218,7 +215,7 @@ export function POComparison({ currentPOs, approvedPOs, onApprove, onDelete }: P
               </div>
             )}
           </div>
-          
+
           {selectedPOIds.size > 0 && (
             <div className="mt-4 flex gap-2">
               <Button
@@ -244,7 +241,7 @@ export function POComparison({ currentPOs, approvedPOs, onApprove, onDelete }: P
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-orange-500" />
                 <p className="text-sm text-orange-300">
-                  {allIssues.length} issue{allIssues.length !== 1 ? 's' : ''} found requiring attention
+                  {allIssues.length} issue{allIssues.length !== 1 ? "s" : ""} found requiring attention
                 </p>
               </div>
             </div>
@@ -258,29 +255,32 @@ export function POComparison({ currentPOs, approvedPOs, onApprove, onDelete }: P
               const isSelected = isGroupSelected(group)
               const isPartiallySelected = isGroupPartiallySelected(group)
               const isMultiItem = group.pos.length > 1
-              
+
               return (
                 <div
                   key={group.id}
                   className={`border rounded p-4 transition-all ${
-                    highestIssue 
-                      ? `${getSeverityColor(highestIssue.severity)} border-l-4 hover:bg-opacity-30` 
-                      : 'border-neutral-700 hover:border-neutral-600 hover:bg-neutral-800/50'
-                  } ${isSelected ? 'ring-2 ring-orange-500/50' : ''}`}
+                    highestIssue
+                      ? `${getSeverityColor(highestIssue.severity)} border-l-4 hover:bg-opacity-30`
+                      : "border-neutral-700 hover:border-neutral-600 hover:bg-neutral-800/50"
+                  } ${isSelected ? "ring-2 ring-orange-500/50" : ""}`}
                 >
                   <div className="flex items-start gap-4">
                     <Checkbox
                       checked={isSelected}
                       ref={(el) => {
                         if (el && isPartiallySelected) {
-                          el.indeterminate = true
+                          const inputEl = el.querySelector('input[type="checkbox"]') as HTMLInputElement
+                          if (inputEl) {
+                            inputEl.indeterminate = true
+                          }
                         }
                       }}
                       onCheckedChange={(checked) => handleSelectGroup(group, checked as boolean)}
                       className="mt-1 border-neutral-600"
                       onClick={(e) => e.stopPropagation()}
                     />
-                    
+
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-3">
                         <span className="text-sm font-semibold text-white">{group.supplier}</span>
@@ -288,26 +288,29 @@ export function POComparison({ currentPOs, approvedPOs, onApprove, onDelete }: P
                           ৳{group.totalAmount.toLocaleString()}
                         </Badge>
                         {isMultiItem && (
-                          <Badge variant="outline" className="text-xs border-blue-500/30 text-blue-400 flex items-center gap-1">
+                          <Badge
+                            variant="outline"
+                            className="text-xs border-blue-500/30 text-blue-400 flex items-center gap-1"
+                          >
                             <PackageOpen className="w-3 h-3" />
                             {group.pos.length} Items Grouped
                           </Badge>
                         )}
                         {groupIssues.length > 0 && (
                           <Badge className={getSeverityColor(highestIssue!.severity)}>
-                            {groupIssues.length} ISSUE{groupIssues.length !== 1 ? 'S' : ''}
+                            {groupIssues.length} ISSUE{groupIssues.length !== 1 ? "S" : ""}
                           </Badge>
                         )}
                       </div>
-                      
+
                       <div className="space-y-3">
                         {group.pos.map((po, idx) => {
                           const poIssues = poIssuesMap.get(po.id) || []
-                          
+
                           return (
-                            <div 
+                            <div
                               key={po.id}
-                              className={`${idx > 0 ? 'pt-3 border-t border-neutral-700/50' : ''} cursor-pointer hover:bg-neutral-800/30 p-2 rounded transition-colors`}
+                              className={`${idx > 0 ? "pt-3 border-t border-neutral-700/50" : ""} cursor-pointer hover:bg-neutral-800/30 p-2 rounded transition-colors`}
                               onClick={() => setSelectedPO(po)}
                             >
                               <div className="flex items-center gap-2 mb-2">
@@ -318,7 +321,7 @@ export function POComparison({ currentPOs, approvedPOs, onApprove, onDelete }: P
                                   </Badge>
                                 )}
                               </div>
-                              
+
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                                 <div>
                                   <p className="text-neutral-500">Item</p>
@@ -330,7 +333,9 @@ export function POComparison({ currentPOs, approvedPOs, onApprove, onDelete }: P
                                 </div>
                                 <div>
                                   <p className="text-neutral-500">Quantity</p>
-                                  <p className="text-white">{po.maxQty} {po.unit}</p>
+                                  <p className="text-white">
+                                    {po.maxQty} {po.unit}
+                                  </p>
                                 </div>
                                 <div>
                                   <p className="text-neutral-500">Rate</p>
@@ -369,14 +374,13 @@ export function POComparison({ currentPOs, approvedPOs, onApprove, onDelete }: P
 
       {selectedPO && (
         <>
-          <div 
+          <div
             className="fixed inset-0 bg-black/50 z-40 animate-in fade-in duration-300"
             onClick={() => setSelectedPO(null)}
           />
           <AnalysisDetailPanel
             po={selectedPO}
             issues={selectedPOIssues}
-            approvedOrders={approvedPOs}
             onClose={() => setSelectedPO(null)}
             onResolve={handleResolve}
           />

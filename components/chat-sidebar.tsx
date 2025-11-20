@@ -1,11 +1,13 @@
-'use client'
+"use client"
 
-import { useState, useRef, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { X, Send, Loader2, Sparkles, MessageSquarePlus, Minimize2 } from 'lucide-react'
-import { ChatMessage, ChatSession } from '@/lib/types'
-import { getCurrentPOs, getApprovedPOs, saveChatSession, getChatSessions } from '@/lib/storage'
+import type React from "react"
+
+import { useState, useRef, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { X, Send, Loader2, Sparkles, MessageSquarePlus, Minimize2 } from "lucide-react"
+import type { ChatMessage, ChatSession } from "@/lib/types"
+import { getCurrentPOs, getApprovedPOs, saveChatSession } from "@/lib/storage"
 
 export function ChatSidebar() {
   const [isOpen, setIsOpen] = useState(false)
@@ -13,25 +15,25 @@ export function ChatSidebar() {
   const [activeSessions, setActiveSessions] = useState<ChatSession[]>([])
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [input, setInput] = useState('')
+  const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const currentSession = activeSessions.find(s => s.id === activeSessionId)
+  const currentSession = activeSessions.find((s) => s.id === activeSessionId)
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
   const handleNewChat = () => {
     const newSession: ChatSession = {
       id: Date.now().toString(),
-      title: 'New Conversation',
+      title: "New Conversation",
       messages: [],
       createdAt: new Date(),
       updatedAt: new Date(),
     }
-    setActiveSessions(prev => [...prev, newSession])
+    setActiveSessions((prev) => [...prev, newSession])
     setActiveSessionId(newSession.id)
     setMessages([])
     setIsOpen(true)
@@ -39,7 +41,7 @@ export function ChatSidebar() {
   }
 
   const handleSwitchSession = (sessionId: string) => {
-    const session = activeSessions.find(s => s.id === sessionId)
+    const session = activeSessions.find((s) => s.id === sessionId)
     if (session) {
       setActiveSessionId(sessionId)
       setMessages(session.messages)
@@ -49,9 +51,9 @@ export function ChatSidebar() {
 
   const handleCloseSession = (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation()
-    setActiveSessions(prev => prev.filter(s => s.id !== sessionId))
+    setActiveSessions((prev) => prev.filter((s) => s.id !== sessionId))
     if (activeSessionId === sessionId) {
-      const remaining = activeSessions.filter(s => s.id !== sessionId)
+      const remaining = activeSessions.filter((s) => s.id !== sessionId)
       if (remaining.length > 0) {
         setActiveSessionId(remaining[0].id)
         setMessages(remaining[0].messages)
@@ -77,41 +79,41 @@ export function ChatSidebar() {
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
-      role: 'user',
+      role: "user",
       content: input,
       timestamp: new Date(),
     }
 
     const updatedMessages = [...messages, userMessage]
     setMessages(updatedMessages)
-    setInput('')
+    setInput("")
     setIsLoading(true)
 
     if (messages.length === 0) {
-      currentSession.title = input.slice(0, 40) + (input.length > 40 ? '...' : '')
-      setActiveSessions(prev => prev.map(s => s.id === currentSession.id ? currentSession : s))
+      currentSession.title = input.slice(0, 40) + (input.length > 40 ? "..." : "")
+      setActiveSessions((prev) => prev.map((s) => (s.id === currentSession.id ? currentSession : s)))
     }
 
     try {
-      const currentPOs = getCurrentPOs()
-      const approvedPOs = getApprovedPOs()
-      
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+      const currentPOs = await getCurrentPOs()
+      const approvedPOs = await getApprovedPOs()
+
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           query: input,
           currentPOs: currentPOs.length,
-          approvedPOs: approvedPOs.length
+          approvedPOs: approvedPOs.length,
         }),
       })
 
-      if (!response.ok) throw new Error('Analysis failed')
+      if (!response.ok) throw new Error("Analysis failed")
 
       const data = await response.json()
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        role: 'assistant',
+        role: "assistant",
         content: data.analysis,
         timestamp: new Date(),
       }
@@ -121,16 +123,16 @@ export function ChatSidebar() {
 
       currentSession.messages = finalMessages
       currentSession.updatedAt = new Date()
-      saveChatSession(currentSession)
-      setActiveSessions(prev => prev.map(s => s.id === currentSession.id ? currentSession : s))
+      saveChatSession("user", currentSession)
+      setActiveSessions((prev) => prev.map((s) => (s.id === currentSession.id ? currentSession : s)))
     } catch (err) {
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'Sorry, I encountered an error analyzing your request.',
+        role: "assistant",
+        content: "Sorry, I encountered an error analyzing your request.",
         timestamp: new Date(),
       }
-      setMessages(prev => [...prev, errorMessage])
+      setMessages((prev) => [...prev, errorMessage])
     } finally {
       setIsLoading(false)
     }
@@ -218,7 +220,7 @@ export function ChatSidebar() {
                 </Button>
               </div>
             </div>
-            
+
             {/* Session tabs */}
             {activeSessions.length > 0 && (
               <div className="flex items-center gap-1 px-2 pb-2 overflow-x-auto">
@@ -228,8 +230,8 @@ export function ChatSidebar() {
                     onClick={() => handleSwitchSession(session.id)}
                     className={`group flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-all flex-shrink-0 ${
                       activeSessionId === session.id
-                        ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                        : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                        ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
+                        : "text-neutral-400 hover:text-white hover:bg-neutral-800"
                     }`}
                   >
                     <span className="truncate max-w-[120px]">{session.title}</span>
@@ -264,13 +266,13 @@ export function ChatSidebar() {
                     <p className="text-xs text-neutral-400">I can help analyze your purchase orders</p>
                   </div>
                   <div className="space-y-2">
-                    <button 
+                    <button
                       onClick={() => setInput("What are my top spending branches?")}
                       className="w-full text-xs text-left text-neutral-400 hover:text-orange-400 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-orange-500/30 rounded-lg p-2.5 transition-all"
                     >
                       What are my top spending branches?
                     </button>
-                    <button 
+                    <button
                       onClick={() => setInput("Show me any price anomalies")}
                       className="w-full text-xs text-left text-neutral-400 hover:text-orange-400 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-orange-500/30 rounded-lg p-2.5 transition-all"
                     >
@@ -281,15 +283,12 @@ export function ChatSidebar() {
               </div>
             ) : (
               messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
+                <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div
                     className={`max-w-[80%] px-3 py-2 rounded-xl text-sm ${
-                      msg.role === 'user'
-                        ? 'bg-gradient-to-br from-orange-500 to-orange-600 text-white'
-                        : 'bg-neutral-900 border border-neutral-800 text-neutral-100'
+                      msg.role === "user"
+                        ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white"
+                        : "bg-neutral-900 border border-neutral-800 text-neutral-100"
                     }`}
                   >
                     <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
@@ -317,7 +316,7 @@ export function ChatSidebar() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
+                  if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault()
                     handleSend()
                   }

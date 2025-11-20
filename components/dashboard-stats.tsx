@@ -4,13 +4,7 @@ import { useMemo, useRef, useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { PurchaseOrder } from '@/lib/types'
 import { TrendingUp, Package, DollarSign, Users, Building2 } from 'lucide-react'
-import {
-  Tooltip,
-  TooltipRoot,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider
-} from '@/components/ui/tooltip'
+import { Tooltip } from '@/components/ui/tooltip'
 
 interface DashboardStatsProps {
   currentPOs: PurchaseOrder[]
