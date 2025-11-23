@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   # PostgreSQL Database
   db:
@@ -28,15 +30,15 @@ services:
     container_name: procurement-app
     ports:
       - "3000:3000"
-      - "5555:5555"  # Prisma Studio port
+      # - "5555:5555"  # REMOVED from web to avoid conflict with Prisma Studio
     environment:
       # Database connection - connects to 'db' service
       DATABASE_URL: postgresql://postgres:postgres@db:5432/procurement_db?schema=public
-      
+
       # NextAuth
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-change-this-to-a-random-secret-in-production}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
-      
+
       # App Config
       NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}
       NODE_ENV: production
@@ -51,7 +53,38 @@ services:
       retries: 3
       start_period: 40s
 
+  # Prisma service: runs generate, migrations, and prisma studio
+  prisma:
+    image: node:18-bullseye-slim
+    container_name: procurement-prisma
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/procurement_db?schema=public
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "
+        set -e;
+        if [ -f package-lock.json ] || [ -f npm-shrinkwrap.json ]; then
+          npm ci --no-audit --no-fund || npm install --no-audit --no-fund;
+        elif [ -f yarn.lock ]; then
+          yarn install --frozen-lockfile || true;
+        else
+          npm install --no-audit --no-fund || true;
+        fi;
+        npx prisma generate;
+        npx prisma migrate deploy || true;
+        npx prisma studio --port 5555 --hostname 0.0.0.0
+      "
+    ports:
+      - "5555:5555"
+    restart: unless-stopped
+
+
 volumes:
   postgres_data:
     driver: local
-
