@@ -28,42 +28,53 @@ The app now uses a microservice pattern with the following services:
 ### 6. Theme Service (`/api/theme`)
 - User theme preferences
 
-## Database Setup
+## Quick Start with Docker
 
-1. Install PostgreSQL on your system
-2. Create a database:
-   \`\`\`bash
-   createdb procurement_db
-   \`\`\`
+### Prerequisites
+- Docker Desktop installed and running
+- No other services on ports 3000, 5433, or 5555
 
-3. Copy `.env.example` to `.env` and update DATABASE_URL:
-   \`\`\`
-   DATABASE_URL="postgresql://username:password@localhost:5432/procurement_db?schema=public"
-   \`\`\`
-
-4. Run Prisma migrations:
-   \`\`\`bash
-   npx prisma migrate dev --name init
-   \`\`\`
-
-5. Generate Prisma Client:
-   \`\`\`bash
-   npx prisma generate
-   \`\`\`
-
-## Running the Application
+### Step 1: Start the Containers
 
 \`\`\`bash
-npm install
-npm run dev
+docker-compose up -d --build
 \`\`\`
 
-## Prisma Studio
+This starts:
+- PostgreSQL database (port 5433)
+- Next.js application (port 3000)
+- Prisma Studio (port 5555)
 
-View and edit your database using Prisma Studio:
+### Step 2: Initialize the Database
+
+Wait 10 seconds for containers to start, then:
 
 \`\`\`bash
-npx prisma studio
+docker-compose exec web npx prisma@5.22.0 db push
+\`\`\`
+
+### Step 3: Access Your Application
+
+Open your browser:
+- **Application**: http://localhost:3000
+- **Prisma Studio**: http://localhost:5555
+
+**That's it!** ✅ Everything runs in Docker.
+
+## Docker Commands
+
+\`\`\`bash
+# Start services
+docker-compose up -d
+
+# Stop services
+docker-compose down
+
+# View logs
+docker-compose logs -f web
+
+# Access Prisma Studio (if not already running)
+docker-compose exec web npx prisma@5.22.0 studio --hostname 0.0.0.0
 \`\`\`
 
 ## API Testing

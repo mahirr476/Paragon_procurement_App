@@ -18,7 +18,7 @@
      - `.env` file had `localhost` in DATABASE_URL
      - Docker containers can't access host's `localhost`
    - **Solutions**:
-     - Created `docker-compose.local.yml` with PostgreSQL container
+     - Updated `docker-compose.yml` with PostgreSQL container
      - Set DATABASE_URL to use `db:5432` (Docker service name)
      - Removed `.env` file from Docker context to prevent override
 
@@ -34,8 +34,8 @@
    - Exposed Prisma Studio port (5555)
 
 ### 5. **Documentation**
-   - Created single comprehensive `SETUP_GUIDE.md`
-   - Cleaned up 4 separate MD files into one unified guide
+   - Updated documentation to use unified `docker-compose.yml`
+   - Simplified setup process for new users
 
 ---
 
@@ -72,24 +72,15 @@
 ## 📁 Files Modified
 
 ### **Created:**
-- `docker-compose.local.yml` - Complete Docker setup with PostgreSQL
-- `SETUP_GUIDE.md` - Comprehensive setup documentation
 - `app/api/health/route.ts` - Health check endpoint
 - `.dockerignore` - Optimized Docker build
 - `env.example` - Environment variable template
-- `studio.ps1` & `studio.sh` - Prisma Studio helper scripts
 
 ### **Modified:**
 - `Dockerfile` - Added OpenSSL packages, Prisma generation
 - `app/operations/page.tsx` - Fixed async data fetching
 - `prisma/schema.prisma` - Updated binary targets
-- `docker-compose.yml` - Added port 5555, fixed ENV format
-
-### **Deleted:**
-- `DOCKER_DATABASE_SETUP.md`
-- `FIX_PRISMA_CONNECTION.md`
-- `PRISMA_STUDIO_GUIDE.md`
-- `docker-database-setup.md`
+- `docker-compose.yml` - Added database, prisma services, and port 5555
 
 ---
 
@@ -114,13 +105,13 @@
 **Working Commands:**
 ```powershell
 # Start everything
-docker-compose -f docker-compose.local.yml up -d --build
+docker-compose up -d --build
 
 # Initialize database
-docker-compose -f docker-compose.local.yml exec web npx prisma@5.22.0 db push
+docker-compose exec web npx prisma@5.22.0 db push
 
-# Open Prisma Studio
-docker-compose -f docker-compose.local.yml exec web npx prisma@5.22.0 studio --hostname 0.0.0.0
+# Open Prisma Studio (already running on port 5555)
+# Or manually: docker-compose exec web npx prisma@5.22.0 studio --hostname 0.0.0.0
 ```
 
 **Access Points:**
