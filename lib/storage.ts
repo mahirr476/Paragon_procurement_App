@@ -1,8 +1,20 @@
 import type { PurchaseOrder, ChatSession, Notification } from "./types"
 
+// Helper to get base URL for API calls
+function getApiUrl(path: string): string {
+  if (typeof window !== "undefined") {
+    // Client-side: use relative URL
+    return path
+  }
+  // Server-side: use absolute URL if available, otherwise return empty to prevent calls
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL || ""
+  return baseUrl ? `${baseUrl}${path}` : path
+}
+
 // Purchase Orders API
 export async function saveApprovedPOs(pos: PurchaseOrder[]) {
-  const response = await fetch("/api/pos", {
+  if (typeof window === "undefined") return { success: false }
+  const response = await fetch(getApiUrl("/api/pos"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ pos: pos.map((po) => ({ ...po, isApproved: true })) }),
@@ -11,13 +23,15 @@ export async function saveApprovedPOs(pos: PurchaseOrder[]) {
 }
 
 export async function getApprovedPOs(): Promise<PurchaseOrder[]> {
-  const response = await fetch("/api/pos?approved=true")
+  if (typeof window === "undefined") return []
+  const response = await fetch(getApiUrl("/api/pos?approved=true"))
   const data = await response.json()
   return data.success ? data.pos : []
 }
 
 export async function saveCurrentPOs(pos: PurchaseOrder[]) {
-  const response = await fetch("/api/pos", {
+  if (typeof window === "undefined") return { success: false }
+  const response = await fetch(getApiUrl("/api/pos"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ pos: pos.map((po) => ({ ...po, isApproved: false })) }),
@@ -26,7 +40,8 @@ export async function saveCurrentPOs(pos: PurchaseOrder[]) {
 }
 
 export async function getCurrentPOs(): Promise<PurchaseOrder[]> {
-  const response = await fetch("/api/pos?approved=false")
+  if (typeof window === "undefined") return []
+  const response = await fetch(getApiUrl("/api/pos?approved=false"))
   const data = await response.json()
   return data.success ? data.pos : []
 }

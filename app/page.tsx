@@ -14,16 +14,19 @@ import SystemsPage from "./systems/page"
 import ReportsPage from "./reports/page"
 import { getApprovedPOs } from "@/lib/storage"
 import { getCurrentUser } from "@/lib/auth"
+import type { User } from "@/lib/types"
 import { useRouter } from "next/navigation"
 import { InteractiveTour } from "@/components/interactive-tour"
 import { SkipTutorialsDialog } from "@/components/skip-tutorials-dialog"
+
+export const dynamic = "force-dynamic"
 
 export default function TacticalDashboard() {
   const router = useRouter()
   const [activeSection, setActiveSection] = useState("overview")
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [approvedPOs, setApprovedPOs] = useState<any[]>([])
-  const [currentUser, setCurrentUser] = useState(getCurrentUser())
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [showTutorialDialog, setShowTutorialDialog] = useState(false)
   const [activeTutorial, setActiveTutorial] = useState<string | null>(null)
   const [tutorialsEnabled, setTutorialsEnabled] = useState(false)
@@ -68,6 +71,7 @@ export default function TacticalDashboard() {
   }, [activeSection])
 
   useEffect(() => {
+    if (typeof window === "undefined") return
     const justLoggedIn = sessionStorage.getItem("show_tutorial_dialog")
     if (justLoggedIn === "true") {
       setShowTutorialDialog(true)

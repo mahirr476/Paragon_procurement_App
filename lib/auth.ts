@@ -15,7 +15,7 @@ export async function registerUser(
 
     const data = await response.json()
 
-    if (data.success && data.user) {
+    if (data.success && data.user && typeof window !== "undefined") {
       // Store user in sessionStorage for client-side state
       sessionStorage.setItem("current_user", JSON.stringify(data.user))
     }
@@ -39,7 +39,7 @@ export async function loginUser(
 
     const data = await response.json()
 
-    if (data.success && data.user) {
+    if (data.success && data.user && typeof window !== "undefined") {
       // Store user in sessionStorage for client-side state
       sessionStorage.setItem("current_user", JSON.stringify(data.user))
     }
@@ -51,10 +51,13 @@ export async function loginUser(
 }
 
 export function logoutUser() {
-  sessionStorage.removeItem("current_user")
+  if (typeof window !== "undefined") {
+    sessionStorage.removeItem("current_user")
+  }
 }
 
 export function getCurrentUser(): User | null {
+  if (typeof window === "undefined") return null
   const data = sessionStorage.getItem("current_user")
   if (!data) return null
   const user = JSON.parse(data)

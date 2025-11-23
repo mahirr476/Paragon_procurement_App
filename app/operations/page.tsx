@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -12,10 +12,30 @@ import { ChartBuilder } from "@/components/chart-builder"
 import { PurchaseOrder } from "@/lib/types"
 
 export default function OperationsPage() {
-  const [currentPOs] = useState(getCurrentPOs())
-  const [approvedPOs] = useState(getApprovedPOs())
+  const [currentPOs, setCurrentPOs] = useState<PurchaseOrder[]>([])
+  const [approvedPOs, setApprovedPOs] = useState<PurchaseOrder[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [activeReport, setActiveReport] = useState<'current' | 'approved'>('current')
   const [timePeriod, setTimePeriod] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('monthly')
+
+  useEffect(() => {
+    async function loadPOs() {
+      setIsLoading(true)
+      try {
+        const [current, approved] = await Promise.all([
+          getCurrentPOs(),
+          getApprovedPOs()
+        ])
+        setCurrentPOs(current)
+        setApprovedPOs(approved)
+      } catch (error) {
+        console.error('Error loading POs:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadPOs()
+  }, [])
 
   const allPOs = activeReport === 'current' ? currentPOs : approvedPOs
 
@@ -43,6 +63,23 @@ export default function OperationsPage() {
       return !isNaN(poDate.getTime()) && poDate >= filterDate
     })
   }, [allPOs, timePeriod])
+
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-white tracking-wider">REPORTS & ANALYTICS</h1>
+          <p className="text-sm text-neutral-400">Comprehensive PO analysis and visualization</p>
+        </div>
+        <Card className="bg-neutral-900 border-neutral-700">
+          <CardContent className="p-8 text-center">
+            <BarChart3 className="w-8 h-8 text-neutral-500 mx-auto mb-3 animate-pulse" />
+            <p className="text-neutral-400 text-sm">Loading reports...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   if (currentPOs.length === 0 && approvedPOs.length === 0) {
     return (

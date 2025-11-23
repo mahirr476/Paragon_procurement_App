@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 
 services:
   web:
@@ -8,9 +8,26 @@ services:
     container_name: procurement-app
     ports:
       - "3000:3000"
+      - "5555:5555"  # Prisma Studio port
     environment:
+      # Database - Use your Neon database URL
       - DATABASE_URL=${DATABASE_URL}
-      # Add other environment variables here if needed
+      - POSTGRES_URL=${POSTGRES_URL:-}
+      - POSTGRES_PRISMA_URL=${POSTGRES_PRISMA_URL:-}
+      
+      # NextAuth
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
-      - NEXTAUTH_URL=http://localhost:3000
-    restart: always
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      
+      # App Config
+      - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}
+      - NODE_ENV=production
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
