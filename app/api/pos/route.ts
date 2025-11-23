@@ -11,6 +11,8 @@ export async function GET(req: NextRequest) {
       orderBy: { uploadedAt: "desc" },
     })
 
+    console.log("[v0] GET POs - found:", pos.length, "records with isApproved:", isApproved)
+    
     return NextResponse.json({ success: true, pos })
   } catch (error) {
     console.error("[v0] Get POs error:", error)
@@ -26,9 +28,20 @@ export async function POST(req: NextRequest) {
     const { pos } = await req.json()
     console.log("[v0] POST POs - count:", pos?.length)
 
+    if (!pos || !Array.isArray(pos) || pos.length === 0) {
+      return NextResponse.json(
+        { success: false, count: 0, error: "No purchase orders provided" },
+        { status: 400 },
+      )
+    }
+
+    // Use createMany with skipDuplicates to handle duplicate IDs gracefully
     const createdPOs = await prisma.purchaseOrder.createMany({
       data: pos,
+      skipDuplicates: true,
     })
+
+    console.log("[v0] Created POs - count:", createdPOs.count, "total provided:", pos.length)
 
     return NextResponse.json({ success: true, count: createdPOs.count })
   } catch (error) {
@@ -43,13 +56,23 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const { poIds, updates } = await req.json()
+    console.log("[v0] PUT POs - count:", poIds?.length, "updates:", updates)
 
-    await prisma.purchaseOrder.updateMany({
+    if (!poIds || !Array.isArray(poIds) || poIds.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "No purchase order IDs provided" },
+        { status: 400 },
+      )
+    }
+
+    const result = await prisma.purchaseOrder.updateMany({
       where: { id: { in: poIds } },
       data: updates,
     })
 
-    return NextResponse.json({ success: true })
+    console.log("[v0] Updated POs - count:", result.count)
+
+    return NextResponse.json({ success: true, count: result.count })
   } catch (error) {
     console.error("[v0] Update POs error:", error)
     return NextResponse.json(

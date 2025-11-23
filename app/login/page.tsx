@@ -37,7 +37,9 @@ export default function LoginPage() {
     console.log("[v0] Login result:", result)
 
     if (result.success) {
-      sessionStorage.setItem("show_tutorial_dialog", "true")
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("show_tutorial_dialog", "true")
+      }
       router.push("/")
     } else {
       setError(result.error || "Login failed")

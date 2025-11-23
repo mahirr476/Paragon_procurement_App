@@ -27,7 +27,7 @@ export function parseCSV(csvText: string): PurchaseOrder[] {
       const supplier = currentSupplier || lastSupplier
 
       const po: PurchaseOrder = {
-        id: `PO-${Date.now()}-${i}`,
+        id: `PO-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 9)}`,
         date: values[0]?.trim() || '',
         supplier: supplier, // Use the carry-forward supplier logic
         orderNo: values[2]?.trim() || '',

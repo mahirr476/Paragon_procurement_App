@@ -31,10 +31,15 @@ export function CSVUploader({ onUploadSuccess }: CSVUploaderProps) {
         throw new Error('No valid purchase orders found in CSV')
       }
 
-      saveCurrentPOs(pos)
+      const result = await saveCurrentPOs(pos)
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save purchase orders to database')
+      }
+
       setMessage({ type: 'success', text: `Successfully uploaded ${pos.length} purchase orders` })
       onUploadSuccess(pos.length)
     } catch (error) {
+      console.error('[CSV Uploader] Error:', error)
       setMessage({
         type: 'error',
         text: error instanceof Error ? error.message : 'Failed to parse CSV file'

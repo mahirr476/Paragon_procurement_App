@@ -14,16 +14,19 @@ import SystemsPage from "./systems/page"
 import ReportsPage from "./reports/page"
 import { getApprovedPOs } from "@/lib/storage"
 import { getCurrentUser } from "@/lib/auth"
+import type { User } from "@/lib/types"
 import { useRouter } from "next/navigation"
 import { InteractiveTour } from "@/components/interactive-tour"
 import { SkipTutorialsDialog } from "@/components/skip-tutorials-dialog"
+
+export const dynamic = "force-dynamic"
 
 export default function TacticalDashboard() {
   const router = useRouter()
   const [activeSection, setActiveSection] = useState("overview")
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [approvedPOs, setApprovedPOs] = useState<any[]>([])
-  const [currentUser, setCurrentUser] = useState(getCurrentUser())
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [showTutorialDialog, setShowTutorialDialog] = useState(false)
   const [activeTutorial, setActiveTutorial] = useState<string | null>(null)
   const [tutorialsEnabled, setTutorialsEnabled] = useState(false)
@@ -52,22 +55,83 @@ export default function TacticalDashboard() {
     loadApprovedPOs()
   }, [])
 
-  // Refresh approved POs when returning to dashboard
+  // Refresh approved POs when returning to dashboard or when section changes
   useEffect(() => {
+    async function refreshPOs() {
+      try {
+        const pos = await getApprovedPOs()
+        console.log("[Dashboard] Loaded approved POs:", pos.length)
+        setApprovedPOs(pos)
+      } catch (error) {
+        console.error("[v0] Error refreshing POs:", error)
+      }
+    }
+    
+    // Refresh immediately and also when switching to overview
+    refreshPOs()
     if (activeSection === "overview") {
-      async function refreshPOs() {
-        try {
-          const pos = await getApprovedPOs()
+      refreshPOs()
+    }
+    
+    // Also refresh periodically (every 3 seconds) when on overview to catch updates
+    let interval: NodeJS.Timeout | null = null
+    if (activeSection === "overview") {
+      interval = setInterval(refreshPOs, 3000)
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [activeSection])
+  
+  // Also refresh on window focus and when POs are approved
+  useEffect(() => {
+    const handleFocus = () => {
+      if (activeSection === "overview") {
+        getApprovedPOs().then(pos => {
+          console.log("[Dashboard] Refreshed on focus:", pos.length)
           setApprovedPOs(pos)
-        } catch (error) {
-          console.error("[v0] Error refreshing POs:", error)
+        }).catch(console.error)
+      }
+    }
+    
+    const handlePOsApproved = () => {
+      if (activeSection === "overview") {
+        getApprovedPOs().then(pos => {
+          console.log("[Dashboard] Refreshed after approval:", pos.length)
+          setApprovedPOs(pos)
+        }).catch(console.error)
+      }
+    }
+    
+    // Check localStorage for updates
+    const checkForUpdates = () => {
+      const lastApproved = localStorage.getItem('pos-last-approved')
+      if (lastApproved) {
+        const lastTime = parseInt(lastApproved)
+        const now = Date.now()
+        // If approved within last 10 seconds, refresh
+        if (now - lastTime < 10000 && activeSection === "overview") {
+          getApprovedPOs().then(setApprovedPOs).catch(console.error)
         }
       }
-      refreshPOs()
+    }
+    
+    window.addEventListener('focus', handleFocus)
+    window.addEventListener('pos-approved', handlePOsApproved)
+    
+    // Check for updates every 2 seconds
+    const interval = setInterval(checkForUpdates, 2000)
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('pos-approved', handlePOsApproved)
+      clearInterval(interval)
     }
   }, [activeSection])
 
   useEffect(() => {
+    if (typeof window === "undefined") return
     const justLoggedIn = sessionStorage.getItem("show_tutorial_dialog")
     if (justLoggedIn === "true") {
       setShowTutorialDialog(true)
