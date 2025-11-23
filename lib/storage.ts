@@ -47,9 +47,19 @@ export async function getCurrentPOs(): Promise<PurchaseOrder[]> {
 }
 
 export async function addToApprovedPOs(pos: PurchaseOrder[]) {
-  const existing = await getApprovedPOs()
-  const combined = [...existing, ...pos]
-  return saveApprovedPOs(combined)
+  if (typeof window === "undefined") return { success: false }
+  
+  // Update existing POs to set isApproved: true instead of creating duplicates
+  const poIds = pos.map(po => po.id)
+  const response = await fetch(getApiUrl("/api/pos"), {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ 
+      poIds,
+      updates: { isApproved: true }
+    }),
+  })
+  return response.json()
 }
 
 export async function clearCurrentPOs() {

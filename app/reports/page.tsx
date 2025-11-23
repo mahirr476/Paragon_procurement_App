@@ -44,10 +44,55 @@ export default function ReportsPage() {
 
   useEffect(() => {
     async function loadPOs() {
-      const approvedPOs = await getApprovedPOs()
-      setPos(approvedPOs)
+      try {
+        const approvedPOs = await getApprovedPOs()
+        console.log('[Reports] Loaded approved POs:', approvedPOs.length)
+        setPos(approvedPOs)
+      } catch (error) {
+        console.error('[Reports] Error loading POs:', error)
+        setPos([])
+      }
     }
     loadPOs()
+    
+    // Refresh when window gains focus (in case data was updated in another tab/section)
+    const handleFocus = () => {
+      loadPOs()
+    }
+    
+    // Refresh when POs are approved
+    const handlePOsApproved = () => {
+      console.log('[Reports] POs approved, refreshing...')
+      loadPOs()
+    }
+    
+    // Check localStorage for updates
+    const checkForUpdates = () => {
+      const lastApproved = localStorage.getItem('pos-last-approved')
+      if (lastApproved) {
+        const lastTime = parseInt(lastApproved)
+        const now = Date.now()
+        // If approved within last 10 seconds, refresh
+        if (now - lastTime < 10000) {
+          loadPOs()
+        }
+      }
+    }
+    
+    window.addEventListener('focus', handleFocus)
+    window.addEventListener('pos-approved', handlePOsApproved)
+    
+    // Also refresh periodically (every 3 seconds) to catch updates
+    const interval = setInterval(() => {
+      loadPOs()
+      checkForUpdates()
+    }, 3000)
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('pos-approved', handlePOsApproved)
+      clearInterval(interval)
+    }
   }, [])
 
   const filteredPOs = useMemo(() => {
