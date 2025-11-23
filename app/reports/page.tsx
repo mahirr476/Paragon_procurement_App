@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { Card } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getApprovedPOs } from "@/lib/storage"
 import type { PurchaseOrder } from "@/lib/types"
@@ -15,6 +16,8 @@ import {
   analyzeSupplierConcentration,
   calculateAveragePOValue,
 } from "@/lib/report-analytics"
+import { identifyDetailedAnomalies, TrendAnomaly } from "@/lib/trend-analyzer"
+import { AnomalyDetailPanel } from "@/components/anomaly-detail-panel"
 import { BarChart3, TrendingUp, AlertTriangle, DollarSign, Package, FileText, Download, Filter } from "lucide-react"
 import {
   Bar,
@@ -41,6 +44,10 @@ export default function ReportsPage() {
   const [spendTrendCategory, setSpendTrendCategory] = useState<string>("all")
   const [poVolumeCategory, setPoVolumeCategory] = useState<string>("all")
   const [riskCategory, setRiskCategory] = useState<string>("all")
+  const [anomalyCategory, setAnomalyCategory] = useState<string>("all")
+
+  const [selectedAnomaly, setSelectedAnomaly] = useState<TrendAnomaly | null>(null)
+  const [resolvedAnomalies, setResolvedAnomalies] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     async function loadPOs() {
@@ -145,6 +152,25 @@ export default function ReportsPage() {
   }, [filteredPOs, riskCategory])
 
   const avgPOValue = useMemo(() => calculateAveragePOValue(filteredPOs), [filteredPOs])
+
+  const allAnomalies = useMemo(() => {
+    const categoryFiltered =
+      anomalyCategory === "all" ? filteredPOs : filteredPOs.filter((po) => po.itemLedgerGroup === anomalyCategory)
+    return identifyDetailedAnomalies(categoryFiltered)
+  }, [filteredPOs, anomalyCategory])
+
+  const anomalies = useMemo(() => {
+    return allAnomalies.filter(a => {
+      const key = `${a.date}-${a.itemName}-${a.type}`
+      return !resolvedAnomalies.has(key)
+    })
+  }, [allAnomalies, resolvedAnomalies])
+
+  const handleResolveAnomaly = (anomaly: TrendAnomaly) => {
+    const key = `${anomaly.date}-${anomaly.itemName}-${anomaly.type}`
+    setResolvedAnomalies(prev => new Set([...prev, key]))
+    setSelectedAnomaly(null)
+  }
 
   const totalSpend = filteredPOs.reduce((sum, po) => sum + po.totalAmount, 0)
   const totalOrders = filteredPOs.length
@@ -510,6 +536,82 @@ export default function ReportsPage() {
           </div>
         </Card>
       </div>
+
+      {/* Anomaly Detection Section */}
+      {anomalies.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-orange-500" />
+            Anomaly Detection
+          </h2>
+
+          <Card className="bg-card border-border p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-orange-500" />
+                DETECTED ANOMALIES ({anomalies.length})
+              </h3>
+              <Select value={anomalyCategory} onValueChange={setAnomalyCategory}>
+                <SelectTrigger className="w-[140px] h-8 text-xs">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {anomalies.map((anomaly, idx) => (
+                <div
+                  key={idx}
+                  className={`flex items-start gap-3 p-3 border rounded text-sm cursor-pointer hover:bg-muted/50 transition-colors ${
+                    anomaly.severity === 'high' ? 'bg-red-500/10 border-red-500/20' :
+                    anomaly.severity === 'medium' ? 'bg-orange-500/10 border-orange-500/20' :
+                    'bg-yellow-500/10 border-yellow-500/20'
+                  }`}
+                  onClick={() => setSelectedAnomaly(anomaly)}
+                >
+                  <Package className={`w-4 h-4 flex-shrink-0 mt-0.5 ${
+                    anomaly.severity === 'high' ? 'text-red-500' :
+                    anomaly.severity === 'medium' ? 'text-orange-500' :
+                    'text-yellow-500'
+                  }`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-foreground font-medium">{anomaly.type}</p>
+                        <p className="text-muted-foreground text-xs mt-1">{anomaly.itemName} · {anomaly.category}</p>
+                      </div>
+                      <Badge variant="outline" className="text-xs whitespace-nowrap">
+                        {anomaly.date}
+                      </Badge>
+                    </div>
+                    <p className="text-muted-foreground text-xs mt-2">{anomaly.description}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-xs text-muted-foreground">{anomaly.supplier}</span>
+                      <span className="text-xs text-muted-foreground/50">•</span>
+                      <span className="text-xs text-muted-foreground">{anomaly.branch}</span>
+                      <span className="text-xs text-muted-foreground/50">•</span>
+                      <span className="text-xs text-accent">Click for details</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      <AnomalyDetailPanel
+        anomaly={selectedAnomaly}
+        onClose={() => setSelectedAnomaly(null)}
+        onResolve={handleResolveAnomaly}
+      />
     </div>
   )
 }

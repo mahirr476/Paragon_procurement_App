@@ -26,9 +26,17 @@ export function parseCSV(csvText: string): PurchaseOrder[] {
       }
       const supplier = currentSupplier || lastSupplier
 
+      // Validate date field
+      const dateStr = values[0]?.trim() || ''
+      const parsedDate = new Date(dateStr)
+      if (!dateStr || isNaN(parsedDate.getTime())) {
+        console.warn(`[CSV Parser] Skipping line ${i}: Invalid date "${dateStr}"`)
+        continue
+      }
+
       const po: PurchaseOrder = {
         id: `PO-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 9)}`,
-        date: values[0]?.trim() || '',
+        date: dateStr,
         supplier: supplier, // Use the carry-forward supplier logic
         orderNo: values[2]?.trim() || '',
         refNo: values[3]?.trim() || '',

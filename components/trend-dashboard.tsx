@@ -103,13 +103,13 @@ export function TrendDashboard({ currentPOs, approvedPOs, timePeriod = 'monthly'
 
   const branchComparison = useMemo(() => {
     const branchData: Record<string, { spending: number, orders: number, branch: string }> = {}
-    
+
     filteredPOs.forEach(po => {
       const branch = po.branch || 'Unknown'
       if (!branchData[branch]) {
         branchData[branch] = { spending: 0, orders: 0, branch }
       }
-      branchData[branch].spending += po.amount || 0
+      branchData[branch].spending += po.totalAmount || 0
       branchData[branch].orders += 1
     })
 
@@ -120,13 +120,13 @@ export function TrendDashboard({ currentPOs, approvedPOs, timePeriod = 'monthly'
 
   const categorySpending = useMemo(() => {
     const catData: Record<string, { category: string, spending: number, orders: number }> = {}
-    
+
     filteredPOs.forEach(po => {
       const cat = po.itemLedgerGroup || 'Uncategorized'
       if (!catData[cat]) {
         catData[cat] = { category: cat, spending: 0, orders: 0 }
       }
-      catData[cat].spending += po.amount || 0
+      catData[cat].spending += po.totalAmount || 0
       catData[cat].orders += 1
     })
 
