@@ -1,5 +1,41 @@
 import { PurchaseOrder } from './types'
 
+/**
+ * Parse date string in various formats (DD/MM/YY, DD/MM/YYYY, MM/DD/YY, etc.)
+ */
+function parseDate(dateStr: string): Date | null {
+  if (!dateStr || !dateStr.trim()) return null
+
+  const trimmed = dateStr.trim()
+
+  // Try DD/MM/YY or DD/MM/YYYY format (most common in the CSV)
+  const ddmmyyMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/)
+  if (ddmmyyMatch) {
+    const day = parseInt(ddmmyyMatch[1], 10)
+    const month = parseInt(ddmmyyMatch[2], 10) - 1 // JavaScript months are 0-indexed
+    let year = parseInt(ddmmyyMatch[3], 10)
+    
+    // Convert 2-digit year to 4-digit (assuming 20xx for years 00-99)
+    if (year < 100) {
+      year = year < 50 ? 2000 + year : 1900 + year
+    }
+    
+    const date = new Date(year, month, day)
+    // Validate the date (check if it's a valid date)
+    if (date.getFullYear() === year && date.getMonth() === month && date.getDate() === day) {
+      return date
+    }
+  }
+
+  // Try standard Date parsing for other formats (ISO, etc.)
+  const standardDate = new Date(trimmed)
+  if (!isNaN(standardDate.getTime())) {
+    return standardDate
+  }
+
+  return null
+}
+
 export function parseCSV(csvText: string): PurchaseOrder[] {
   const lines = csvText.trim().split('\n')
   if (lines.length < 2) return []
@@ -28,8 +64,8 @@ export function parseCSV(csvText: string): PurchaseOrder[] {
 
       // Validate date field
       const dateStr = values[0]?.trim() || ''
-      const parsedDate = new Date(dateStr)
-      if (!dateStr || isNaN(parsedDate.getTime())) {
+      const parsedDate = parseDate(dateStr)
+      if (!parsedDate) {
         console.warn(`[CSV Parser] Skipping line ${i}: Invalid date "${dateStr}"`)
         continue
       }

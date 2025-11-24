@@ -8,7 +8,7 @@ services:
     container_name: procurement-app
     ports:
       - "3000:3000"
-      - "5555:5555"  # Prisma Studio port
+      - "5565:5565"  # Prisma Studio port
     environment:
       # Database - Use your Neon database URL
       - DATABASE_URL=${DATABASE_URL}
