@@ -256,9 +256,9 @@ export function ThemeSelector({ collapsed }: { collapsed: boolean }) {
         variant="ghost"
         size="icon"
         onClick={() => setIsOpen(!isOpen)}
-        className="text-muted-foreground hover:text-foreground w-full"
+        className="text-muted-foreground hover:text-foreground w-full justify-center px-0"
       >
-        <Palette className="w-5 h-5" />
+        <Palette className="w-5 h-5 mx-auto" />
       </Button>
     )
   }
