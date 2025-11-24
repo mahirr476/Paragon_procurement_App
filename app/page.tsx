@@ -346,7 +346,7 @@ export default function TacticalDashboard() {
             </Button>
           </div>
 
-          <nav className={`space-y-2 flex-1 ${sidebarCollapsed ? "px-0" : ""}`}>
+          <nav className={`space-y-2 ${sidebarCollapsed ? "px-0" : ""}`}>
             {[
               { id: "overview", icon: Database, label: "DASHBOARD" },
               { id: "upload", icon: Upload, label: "UPLOAD" },
@@ -381,8 +381,8 @@ export default function TacticalDashboard() {
             </div>
           )}
 
-          {/* Moved theme selector to bottom with border above */}
-          <div className={`mt-4 pt-4 border-t border-border ${sidebarCollapsed ? "px-2" : ""}`}>
+          {/* Theme selector pushed to bottom */}
+          <div className={`mt-auto pt-4 border-t border-border ${sidebarCollapsed ? "px-2" : "mt-20"}`}>
             <ThemeSelector collapsed={sidebarCollapsed} />
           </div>
         </div>
