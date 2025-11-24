@@ -1,14 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ChevronRight, Settings, BarChart3, Zap, Database, FileText, Upload } from "lucide-react"
+import { ChevronRight, Settings, BarChart3, Zap, Database, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DashboardOverview } from "@/components/dashboard-overview"
 import { ProfileDropdown } from "@/components/profile-dropdown"
 import { NotificationBell } from "@/components/notification-bell"
 import { ThemeSelector } from "@/components/theme-selector"
 import UploadPage from "./upload/page"
-import AgentNetworkPage from "./agent-network/page"
 import IntelligencePage from "./intelligence/page"
 import SystemsPage from "./systems/page"
 import ReportsPage from "./reports/page"
@@ -278,36 +277,6 @@ export default function TacticalDashboard() {
         position: "top",
       },
     ],
-    agents: [
-      {
-        target: '[data-tour="trends-filters"]',
-        title: "Analysis Controls",
-        description:
-          "Filter your trend analysis by time period (daily, weekly, monthly, yearly), branch, and item category to focus on specific segments.",
-        position: "bottom",
-      },
-      {
-        target: '[data-tour="trends-summary"]',
-        title: "Trend Summary Cards",
-        description:
-          "Key trend indicators showing total orders, spending trends, and detected anomalies. The percentages show changes over your selected time period.",
-        position: "bottom",
-      },
-      {
-        target: '[data-tour="trends-charts"]',
-        title: "Spending Analysis",
-        description:
-          "Visual breakdown of spending by branch and category. These charts help identify where resources are being allocated.",
-        position: "top",
-      },
-      {
-        target: '[data-tour="trends-anomalies"]',
-        title: "Anomaly Detection",
-        description:
-          "Automatically detected unusual patterns in your purchase orders. Click any anomaly card to see detailed analysis, related orders, and suggested actions.",
-        position: "top",
-      },
-    ],
     intelligence: [
       {
         target: '[data-tour="ai-sidebar-toggle"]',
@@ -382,7 +351,6 @@ export default function TacticalDashboard() {
               { id: "overview", icon: Database, label: "DASHBOARD" },
               { id: "upload", icon: Upload, label: "UPLOAD" },
               { id: "reports", icon: BarChart3, label: "REPORTS" },
-              { id: "agents", icon: FileText, label: "TRENDS" },
               { id: "intelligence", icon: Zap, label: "AI ANALYSIS" },
               { id: "systems", icon: Settings, label: "SETTINGS" },
             ].map((item) => (
@@ -452,7 +420,6 @@ export default function TacticalDashboard() {
           {activeSection === "overview" && <DashboardOverview approvedPOs={approvedPOs} />}
           {activeSection === "upload" && <UploadPage />}
           {activeSection === "reports" && <ReportsPage />}
-          {activeSection === "agents" && <AgentNetworkPage />}
           {activeSection === "intelligence" && <IntelligencePage />}
           {activeSection === "systems" && <SystemsPage />}
         </div>
