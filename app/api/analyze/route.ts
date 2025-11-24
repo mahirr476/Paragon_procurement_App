@@ -54,7 +54,7 @@ ${JSON.stringify(poContext.approvedPOs.slice(0, 10), null, 2)}
 Provide a concise, actionable analysis with specific insights and recommendations related to the procurement data.`
 
     const { text } = await generateText({
-      model: 'openai/gpt-4o-mini',
+      model: 'anthropic/claude-3-5-sonnet-20241022',
       prompt: prompt,
       temperature: 0.7,
       maxTokens: 1000,
