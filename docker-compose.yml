@@ -77,10 +77,10 @@ services:
         fi;
         npx prisma generate;
         npx prisma migrate deploy || true;
-        npx prisma studio --port 5555 --hostname 0.0.0.0
+        npx prisma studio --port 5565 --hostname 0.0.0.0
       "
     ports:
-      - "5555:5555"
+      - "5565:5565"
     restart: unless-stopped
 
 volumes:
