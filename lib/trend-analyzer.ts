@@ -91,7 +91,7 @@ export function analyzeDailyTrends(pos: PurchaseOrder[]): TrendMetrics[] {
   return metrics
 }
 
-export function analyzePeriodTrends(pos: PurchaseOrder[], periodType: 'weekly' | 'monthly' = 'monthly'): TrendMetrics[] {
+export function analyzePeriodTrends(pos: PurchaseOrder[], periodType: 'daily' | 'weekly' | 'monthly' = 'monthly'): TrendMetrics[] {
   if (pos.length === 0) return []
 
   const periodData: Record<string, PurchaseOrder[]> = {}
@@ -101,7 +101,9 @@ export function analyzePeriodTrends(pos: PurchaseOrder[], periodType: 'weekly' |
     if (isNaN(date.getTime())) return
 
     let periodKey: string
-    if (periodType === 'weekly') {
+    if (periodType === 'daily') {
+      periodKey = date.toISOString().split('T')[0]
+    } else if (periodType === 'weekly') {
       const weekStart = new Date(date)
       weekStart.setDate(date.getDate() - date.getDay())
       periodKey = weekStart.toISOString().split('T')[0]
@@ -134,9 +136,14 @@ export function analyzePeriodTrends(pos: PurchaseOrder[], periodType: 'weekly' |
 
     const topCategory = Object.entries(categoryCount).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A'
 
-    const label = periodType === 'weekly' 
-      ? `Week of ${period}` 
-      : new Date(period + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
+    let label: string
+    if (periodType === 'daily') {
+      label = new Date(period).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    } else if (periodType === 'weekly') {
+      label = `Week of ${period}`
+    } else {
+      label = new Date(period + '-01').toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
+    }
 
     metrics.push({
       period,
@@ -225,16 +232,20 @@ export function identifyDetailedAnomalies(pos: PurchaseOrder[]): TrendAnomaly[] 
   pos.forEach(po => {
     const key = `${po.supplier}-${po.item}`
     const baseline = itemBaselines[key]
-    
+
     if (baseline.count < 2) return // Need at least 2 data points
-    
+
     const avgRate = baseline.rates.reduce((a, b) => a + b, 0) / baseline.rates.length
     const avgAmount = baseline.totalAmount / baseline.count
-    
-    // Price deviation anomaly
-    if (avgRate > 0) {
+
+    // Check if item is repair/maintenance related (exclude from price anomaly detection)
+    const itemNameLower = po.item.toLowerCase()
+    const isRepairMaintenance = itemNameLower.includes('repair') || itemNameLower.includes('maintenance')
+
+    // Price deviation anomaly (skip for repair and maintenance items)
+    if (avgRate > 0 && !isRepairMaintenance) {
       const deviation = ((po.rate - avgRate) / avgRate) * 100
-      
+
       if (Math.abs(deviation) > 30 && isFinite(deviation)) {
         anomalies.push({
           type: 'Price Deviation',

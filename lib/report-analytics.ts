@@ -29,6 +29,7 @@ export interface SupplierPerformance {
   averageLeadTime: number
   priceVariance: number
   totalOrders: number
+  mostFrequentItem: string
   [key: string]: string | number // Index signature for Recharts compatibility
 }
 
@@ -135,6 +136,7 @@ export function analyzeSupplierPerformance(pos: PurchaseOrder[]): SupplierPerfor
       totalOrders: number
       leadTimes: number[]
       prices: number[]
+      items: Map<string, number>
     }
   >()
 
@@ -145,6 +147,7 @@ export function analyzeSupplierPerformance(pos: PurchaseOrder[]): SupplierPerfor
       totalOrders: 0,
       leadTimes: [],
       prices: [],
+      items: new Map<string, number>(),
     }
 
     // Calculate lead time
@@ -162,6 +165,10 @@ export function analyzeSupplierPerformance(pos: PurchaseOrder[]): SupplierPerfor
 
     existing.totalOrders++
     existing.prices.push(po.rate)
+
+    // Track item frequency
+    const itemName = po.item || "Unknown Item"
+    existing.items.set(itemName, (existing.items.get(itemName) || 0) + 1)
 
     supplierMap.set(supplier, existing)
   })
@@ -181,12 +188,23 @@ export function analyzeSupplierPerformance(pos: PurchaseOrder[]): SupplierPerfor
             100
           : 0
 
+      // Find most frequent item
+      let mostFrequentItem = "N/A"
+      let maxCount = 0
+      data.items.forEach((count, item) => {
+        if (count > maxCount) {
+          maxCount = count
+          mostFrequentItem = item
+        }
+      })
+
       return {
         supplier,
         onTimeDeliveryRate: data.totalOrders > 0 ? (data.onTimeCount / data.totalOrders) * 100 : 0,
         averageLeadTime: avgLeadTime,
         priceVariance,
         totalOrders: data.totalOrders,
+        mostFrequentItem,
       }
     })
     .filter((s) => s.totalOrders >= 3) // Only include suppliers with 3+ orders

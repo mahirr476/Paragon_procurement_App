@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Palette, Check } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { getTheme, saveTheme } from "@/lib/storage"
+import { getCurrentUser } from "@/lib/auth"
 
 const themes = [
   {
@@ -210,11 +211,7 @@ const themes = [
 
 export function ThemeSelector({ collapsed }: { collapsed: boolean }) {
   const [isOpen, setIsOpen] = useState(false)
-  const [currentTheme, setCurrentTheme] = useState(getTheme())
-
-  useEffect(() => {
-    applyTheme(currentTheme)
-  }, [])
+  const [currentTheme, setCurrentTheme] = useState('cyberpunk')
 
   const applyTheme = (themeId: string) => {
     const theme = themes.find(t => t.id === themeId)
@@ -222,7 +219,7 @@ export function ThemeSelector({ collapsed }: { collapsed: boolean }) {
 
     const root = document.documentElement
     root.setAttribute('data-theme', themeId)
-    
+
     const colors = theme.colors
 
     root.style.setProperty('--background', colors.background)
@@ -241,98 +238,112 @@ export function ThemeSelector({ collapsed }: { collapsed: boolean }) {
     root.style.setProperty('--input', colors.border)
   }
 
-  const handleThemeChange = (themeId: string) => {
+  useEffect(() => {
+    const loadTheme = async () => {
+      const user = getCurrentUser()
+      if (user) {
+        const theme = await getTheme(user.id)
+        setCurrentTheme(theme)
+        applyTheme(theme)
+      } else {
+        applyTheme('cyberpunk')
+      }
+    }
+    loadTheme()
+  }, [])
+
+  const handleThemeChange = async (themeId: string) => {
     setCurrentTheme(themeId)
-    saveTheme(themeId)
+    const user = getCurrentUser()
+    if (user) {
+      await saveTheme(user.id, themeId)
+    }
     applyTheme(themeId)
     setIsOpen(false)
   }
 
   const currentThemeData = themes.find(t => t.id === currentTheme)
 
-  if (collapsed) {
-    return (
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => setIsOpen(!isOpen)}
-        className="text-muted-foreground hover:text-foreground w-full justify-center px-0"
-      >
-        <Palette className="w-5 h-5 mx-auto" />
-      </Button>
-    )
-  }
-
   return (
     <div className="relative">
       <Button
         variant="ghost"
+        size={collapsed ? "icon" : "default"}
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-2 text-muted-foreground hover:text-foreground justify-start"
+        className={collapsed
+          ? "text-muted-foreground hover:text-foreground w-full justify-center px-0"
+          : "w-full flex items-center gap-2 text-muted-foreground hover:text-foreground justify-start"
+        }
       >
         <Palette className="w-5 h-5" />
-        <div className="flex flex-col items-start">
-          <span className="text-sm">Theme</span>
-          <span className="text-xs text-muted-foreground">{currentThemeData?.name}</span>
-        </div>
+        {!collapsed && (
+          <div className="flex flex-col items-start">
+            <span className="text-sm">Theme</span>
+            <span className="text-xs text-muted-foreground">{currentThemeData?.name}</span>
+          </div>
+        )}
       </Button>
 
       {isOpen && (
         <>
-          <div 
-            className="fixed inset-0 z-40" 
+          <div
+            className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute bottom-full left-0 mb-2 w-72 bg-card border border-border rounded-lg shadow-xl z-50 p-4">
-            <div className="text-xs text-muted-foreground font-medium mb-4">SELECT THEME</div>
-            
-            {/* Dark Themes */}
-            <div className="mb-4">
-              <div className="text-xs font-semibold text-foreground mb-2">Dark Themes</div>
-              <div className="space-y-2">
-                {themes.filter(t => t.type === 'dark').map(theme => (
-                  <button
-                    key={theme.id}
-                    onClick={() => handleThemeChange(theme.id)}
-                    className={`w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted transition-all ${
-                      currentTheme === theme.id ? 'bg-muted ring-2 ring-primary' : ''
-                    }`}
-                  >
-                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${theme.colors.preview} border-2 border-border shadow-sm`} />
-                    <div className="flex-1 text-left">
-                      <div className="text-sm font-medium text-foreground">{theme.name}</div>
-                      <div className="text-xs text-muted-foreground">{theme.description}</div>
-                    </div>
-                    {currentTheme === theme.id && (
-                      <Check className="w-5 h-5 text-primary" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
+          <div className={`absolute bottom-full mb-2 w-72 max-h-[70vh] bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden flex flex-col ${
+            collapsed ? "left-full ml-2" : "left-0"
+          }`}>
+            <div className="text-xs text-muted-foreground font-medium p-4 pb-2">SELECT THEME</div>
 
-            {/* Light Themes */}
-            <div>
-              <div className="text-xs font-semibold text-foreground mb-2">Light Themes</div>
-              <div className="space-y-2">
-                {themes.filter(t => t.type === 'light').map(theme => (
-                  <button
-                    key={theme.id}
-                    onClick={() => handleThemeChange(theme.id)}
-                    className={`w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted transition-all ${
-                      currentTheme === theme.id ? 'bg-muted ring-2 ring-primary' : ''
-                    }`}
-                  >
-                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${theme.colors.preview} border-2 border-border shadow-sm`} />
-                    <div className="flex-1 text-left">
-                      <div className="text-sm font-medium text-foreground">{theme.name}</div>
-                      <div className="text-xs text-muted-foreground">{theme.description}</div>
-                    </div>
-                    {currentTheme === theme.id && (
-                      <Check className="w-5 h-5 text-primary" />
-                    )}
-                  </button>
-                ))}
+            <div className="overflow-y-auto px-4 pb-4">
+              {/* Dark Themes */}
+              <div className="mb-4">
+                <div className="text-xs font-semibold text-foreground mb-2">Dark Themes</div>
+                <div className="space-y-2">
+                  {themes.filter(t => t.type === 'dark').map(theme => (
+                    <button
+                      key={theme.id}
+                      onClick={() => handleThemeChange(theme.id)}
+                      className={`w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted transition-all ${
+                        currentTheme === theme.id ? 'bg-muted ring-2 ring-primary' : ''
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${theme.colors.preview} border-2 border-border shadow-sm flex-shrink-0`} />
+                      <div className="flex-1 text-left">
+                        <div className="text-sm font-medium text-foreground">{theme.name}</div>
+                        <div className="text-xs text-muted-foreground">{theme.description}</div>
+                      </div>
+                      {currentTheme === theme.id && (
+                        <Check className="w-5 h-5 text-primary flex-shrink-0" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Light Themes */}
+              <div>
+                <div className="text-xs font-semibold text-foreground mb-2">Light Themes</div>
+                <div className="space-y-2">
+                  {themes.filter(t => t.type === 'light').map(theme => (
+                    <button
+                      key={theme.id}
+                      onClick={() => handleThemeChange(theme.id)}
+                      className={`w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted transition-all ${
+                        currentTheme === theme.id ? 'bg-muted ring-2 ring-primary' : ''
+                      }`}
+                    >
+                      <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${theme.colors.preview} border-2 border-border shadow-sm flex-shrink-0`} />
+                      <div className="flex-1 text-left">
+                        <div className="text-sm font-medium text-foreground">{theme.name}</div>
+                        <div className="text-xs text-muted-foreground">{theme.description}</div>
+                      </div>
+                      {currentTheme === theme.id && (
+                        <Check className="w-5 h-5 text-primary flex-shrink-0" />
+                      )}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

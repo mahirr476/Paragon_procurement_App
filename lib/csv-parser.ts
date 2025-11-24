@@ -1,12 +1,59 @@
 import { PurchaseOrder } from './types'
 
+/**
+ * Parse date string in various formats (DD/MM/YY, DD/MM/YYYY, MM/DD/YY, etc.)
+ */
+function parseDate(dateStr: string): Date | null {
+  if (!dateStr || !dateStr.trim()) return null
+
+  const trimmed = dateStr.trim()
+
+  // Try DD/MM/YY or DD/MM/YYYY format (most common in the CSV)
+  const ddmmyyMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/)
+  if (ddmmyyMatch) {
+    const day = parseInt(ddmmyyMatch[1], 10)
+    const month = parseInt(ddmmyyMatch[2], 10) - 1 // JavaScript months are 0-indexed
+    let year = parseInt(ddmmyyMatch[3], 10)
+    
+    // Convert 2-digit year to 4-digit (assuming 20xx for years 00-99)
+    if (year < 100) {
+      year = year < 50 ? 2000 + year : 1900 + year
+    }
+    
+    const date = new Date(year, month, day)
+    // Validate the date (check if it's a valid date)
+    if (date.getFullYear() === year && date.getMonth() === month && date.getDate() === day) {
+      return date
+    }
+  }
+
+  // Try standard Date parsing for other formats (ISO, etc.)
+  const standardDate = new Date(trimmed)
+  if (!isNaN(standardDate.getTime())) {
+    return standardDate
+  }
+
+  return null
+}
+
 export function parseCSV(csvText: string): PurchaseOrder[] {
-  const lines = csvText.trim().split('\n')
+  const lines = csvText.trim().split('\n').filter(line => line.trim().length > 0)
   if (lines.length < 2) return []
 
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"(.*)"$/, '$1'))
-  const pos: PurchaseOrder[] = []
+  // Parse headers using the CSV line parser to handle quoted fields correctly
+  const headerLine = lines[0]
+  const headers = parseCSVLine(headerLine).map(h => h.trim())
 
+  // Detect CSV format by checking for "Weight" and "Pending Wt." columns
+  const hasWeightColumn = headers.some(h =>
+    h.toLowerCase().includes('weight') && !h.toLowerCase().includes('qty')
+  )
+
+  console.log(`[CSV Parser] Detected ${hasWeightColumn ? 'NEW' : 'OLD'} CSV format (${hasWeightColumn ? 'WITH' : 'WITHOUT'} Weight columns)`)
+  console.log(`[CSV Parser] Total columns: ${headers.length}`)
+  console.log(`[CSV Parser] Headers:`, headers.slice(0, 15).join(', '))
+
+  const pos: PurchaseOrder[] = []
   let lastSupplier = ''
 
   for (let i = 1; i < lines.length; i++) {
@@ -26,10 +73,24 @@ export function parseCSV(csvText: string): PurchaseOrder[] {
       }
       const supplier = currentSupplier || lastSupplier
 
+      // Validate date field
+      const dateStr = values[0]?.trim() || ''
+      const parsedDate = parseDate(dateStr)
+      if (!parsedDate) {
+        console.warn(`[CSV Parser] Skipping line ${i}: Invalid date "${dateStr}"`)
+        continue
+      }
+
+      // Column mapping based on CSV format:
+      // OLD format: Date,Supplier,Order No.,Ref. No.,Due Date,Branch,Requisition Type,Item/Ledger Group,Item,Min. Qty.,Max. Qty.,Unit.,Rate,Delivery Date,...
+      //             0    1        2         3         4        5      6                 7                8     9          10         11    12    13
+      // NEW format: Date,Supplier,Order No.,Ref. No.,Due Date,Branch,Requisition Type,Item/Ledger Group,Item,Min. Qty.,Max. Qty.,Weight,Unit.,Rate,Pending Wt.,Delivery Date,...
+      //             0    1        2         3         4        5      6                 7                8     9          10         11     12    13    14           15
+
       const po: PurchaseOrder = {
         id: `PO-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 9)}`,
-        date: values[0]?.trim() || '',
-        supplier: supplier, // Use the carry-forward supplier logic
+        date: dateStr,
+        supplier: supplier,
         orderNo: values[2]?.trim() || '',
         refNo: values[3]?.trim() || '',
         dueDate: values[4]?.trim() || '',
@@ -37,31 +98,70 @@ export function parseCSV(csvText: string): PurchaseOrder[] {
         requisitionType: values[6]?.trim() || '',
         itemLedgerGroup: values[7]?.trim() || '',
         item: values[8]?.trim() || '',
-        minQty: parseFloat(values[9]?.trim() || '0'),
-        maxQty: parseFloat(values[10]?.trim() || '0'),
-        unit: values[11]?.trim() || '',
-        rate: parseFloat(values[12]?.replace(/,/g, '')?.trim() || '0'),
-        deliveryDate: values[13]?.trim() || '',
-        cgst: parseFloat(values[14]?.trim() || '0'),
-        sgst: parseFloat(values[15]?.trim() || '0'),
-        igst: parseFloat(values[16]?.trim() || '0'),
-        vat: parseFloat(values[17]?.trim() || '0'),
-        lastApprovedRate: parseFloat(values[18]?.replace(/,/g, '')?.trim() || '0'),
-        lastSupplier: values[19]?.trim() || '',
-        broker: values[20]?.trim() || '',
-        totalAmount: parseFloat(values[21]?.replace(/,/g, '')?.trim() || '0'),
-        status: values[22]?.trim() || 'pending',
-        deliveryType: values[23]?.trim() || '',
-        openPO: values[24]?.trim() || '',
-        openPONo: values[25]?.trim() || '',
+        minQty: parseFloat(values[9]?.replace(/,/g, '')?.trim() || '0'),
+        maxQty: parseFloat(values[10]?.replace(/,/g, '')?.trim() || '0'),
+        // OLD: Unit at 11 | NEW: Weight at 11, Unit at 12
+        unit: hasWeightColumn ? values[12]?.trim() || '' : values[11]?.trim() || '',
+        // OLD: Rate at 12 | NEW: Rate at 13
+        rate: parseFloat(values[hasWeightColumn ? 13 : 12]?.replace(/,/g, '')?.trim() || '0'),
+        // OLD: Delivery Date at 13 | NEW: Pending Wt. at 14, Delivery Date at 15
+        deliveryDate: hasWeightColumn ? values[15]?.trim() || '' : values[13]?.trim() || '',
+        // OLD: CGST at 14 | NEW: CGST at 16
+        cgst: parseFloat(values[hasWeightColumn ? 16 : 14]?.trim() || '0'),
+        // OLD: SGST at 15 | NEW: SGST at 17
+        sgst: parseFloat(values[hasWeightColumn ? 17 : 15]?.trim() || '0'),
+        // OLD: IGST at 16 | NEW: IGST at 18
+        igst: parseFloat(values[hasWeightColumn ? 18 : 16]?.trim() || '0'),
+        // OLD: VAT at 17 | NEW: VAT at 19
+        vat: parseFloat(values[hasWeightColumn ? 19 : 17]?.trim() || '0'),
+        // OLD: Last Approved Rate at 18 | NEW: at 20
+        lastApprovedRate: parseFloat(values[hasWeightColumn ? 20 : 18]?.replace(/,/g, '')?.trim() || '0'),
+        // OLD: Last Supplier at 19 | NEW: at 21
+        lastSupplier: values[hasWeightColumn ? 21 : 19]?.trim() || '',
+        // OLD: Broker at 20 | NEW: at 22
+        broker: values[hasWeightColumn ? 22 : 20]?.trim() || '',
+        // OLD: Total Amount at 21 | NEW: at 23
+        totalAmount: parseFloat(values[hasWeightColumn ? 23 : 21]?.replace(/,/g, '')?.trim() || '0'),
+        // OLD: Status at 22 | NEW: at 24
+        status: values[hasWeightColumn ? 24 : 22]?.trim() || 'pending',
+        // OLD: Delivery Type at 23 | NEW: at 25
+        deliveryType: values[hasWeightColumn ? 25 : 23]?.trim() || '',
+        // OLD: Open PO at 24 | NEW: at 26
+        openPO: values[hasWeightColumn ? 26 : 24]?.trim() || '',
+        // OLD: Open PO No at 25 | NEW: at 27
+        openPONo: values[hasWeightColumn ? 27 : 25]?.trim() || '',
         uploadedAt: new Date().toISOString(),
         isApproved: false,
       }
 
+      // Debug logging for first entry
+      if (i === 1) {
+        console.log(`[CSV Parser] DEBUG - First row field mapping:`)
+        console.log(`  - values[11]: "${values[11]}" (${hasWeightColumn ? 'Weight' : 'Unit'})`)
+        console.log(`  - values[12]: "${values[12]}" (${hasWeightColumn ? 'Unit' : 'Rate'})`)
+        console.log(`  - values[13]: "${values[13]}" (${hasWeightColumn ? 'Rate' : 'Delivery Date'})`)
+        console.log(`  - Parsed unit: "${po.unit}"`)
+        console.log(`  - Parsed rate: ${po.rate}`)
+        console.log(`  - Parsed totalAmount: ${po.totalAmount}`)
+      }
+
       pos.push(po)
     } catch (error) {
-      console.log(`[v0] Error parsing line ${i}:`, error)
+      console.error(`[CSV Parser] Error parsing line ${i}:`, error)
+      console.error(`[CSV Parser] Line content:`, line.substring(0, 100))
     }
+  }
+
+  console.log(`[CSV Parser] Successfully parsed ${pos.length} purchase orders from ${lines.length - 1} data lines`)
+
+  if (pos.length > 0) {
+    console.log(`[CSV Parser] Sample first entry:`)
+    console.log(`  - Date: ${pos[0].date}`)
+    console.log(`  - Supplier: ${pos[0].supplier}`)
+    console.log(`  - Item: ${pos[0].item}`)
+    console.log(`  - Unit: ${pos[0].unit}`)
+    console.log(`  - Rate: ${pos[0].rate}`)
+    console.log(`  - Total Amount: ${pos[0].totalAmount}`)
   }
 
   return pos
