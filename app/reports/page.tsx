@@ -229,6 +229,29 @@ export default function ReportsPage() {
     setSelectedAnomaly(null)
   }
 
+  // Top Suppliers by Frequency (from Trends)
+  const topSuppliersByCategory = useMemo(() => {
+    const categoryMap: Record<string, typeof supplierTrends> = {}
+
+    supplierTrends.forEach(supplier => {
+      const supplierPOs = filteredPOs.filter(po => po.supplier === supplier.supplier)
+      supplierPOs.forEach(po => {
+        const cat = po.itemLedgerGroup || 'Uncategorized'
+        if (!categoryMap[cat]) categoryMap[cat] = []
+        const existing = categoryMap[cat].find(s => s.supplier === supplier.supplier)
+        if (!existing) {
+          categoryMap[cat].push({...supplier})
+        }
+      })
+    })
+
+    return categoryMap
+  }, [supplierTrends, filteredPOs])
+
+  const topSuppliers = supplierTrends
+    .sort((a, b) => b.orderCount - a.orderCount)
+    .slice(0, 10)
+
   const totalSpend = filteredPOs.reduce((sum, po) => sum + po.totalAmount, 0)
   const totalOrders = filteredPOs.length
   const uniqueSuppliers = new Set(filteredPOs.map((po) => po.supplier)).size
@@ -657,6 +680,63 @@ export default function ReportsPage() {
           </Card>
         </div>
       )}
+
+      {/* Top Suppliers by Frequency */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+          <Package className="w-5 h-5 text-purple-500" />
+          Top Suppliers by Frequency
+        </h2>
+
+        <Card className="bg-card border-border p-6">
+          <div className="space-y-4">
+            {Object.entries(topSuppliersByCategory).map(([category, suppliers]) => (
+              <div key={category}>
+                <p className="text-sm text-muted-foreground mb-2 font-semibold">{category}</p>
+                <div className="space-y-2">
+                  {suppliers.slice(0, 3).map((supplier) => (
+                    <div key={supplier.supplier} className="flex items-center justify-between p-3 bg-muted/50 rounded border border-border">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{supplier.supplier}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {supplier.orderCount} orders · Last: {supplier.lastOrderDate} · {supplier.frequency}
+                        </p>
+                      </div>
+                      <div className="text-right ml-4">
+                        <p className="text-sm font-mono text-accent">₹{(supplier.totalAmount / 100000).toFixed(1)}L</p>
+                        <p className={`text-xs ${!isFinite(supplier.rateVolatility) ? 'text-muted-foreground' : supplier.rateVolatility > 0.15 ? 'text-red-400' : 'text-green-400'}`}>
+                          Vol: {isFinite(supplier.rateVolatility) ? `${(supplier.rateVolatility * 100).toFixed(1)}%` : 'N/A'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {Object.keys(topSuppliersByCategory).length === 0 && (
+              <div className="space-y-2">
+                {topSuppliers.map((supplier) => (
+                  <div key={supplier.supplier} className="flex items-center justify-between p-3 bg-muted/50 rounded border border-border">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{supplier.supplier}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {supplier.orderCount} orders · Last: {supplier.lastOrderDate} · {supplier.frequency}
+                      </p>
+                    </div>
+                    <div className="text-right ml-4">
+                      <p className="text-sm font-mono text-accent">₹{(supplier.totalAmount / 100000).toFixed(1)}L</p>
+                      <p className={`text-xs ${!isFinite(supplier.rateVolatility) ? 'text-muted-foreground' : supplier.rateVolatility > 0.15 ? 'text-red-400' : 'text-green-400'}`}>
+                        Vol: {isFinite(supplier.rateVolatility) ? `${(supplier.rateVolatility * 100).toFixed(1)}%` : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
 
       {/* Detected Anomalies */}
       {viewVisibility.anomalies && anomalies.length > 0 && (
