@@ -83,9 +83,9 @@ export function ProfileDropdown({ user }: ProfileDropdownProps) {
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="flex items-center gap-2 text-neutral-400 hover:text-orange-500"
+            className="flex items-center gap-2 text-neutral-400 hover:!bg-transparent hover:!text-orange-500 h-auto p-1"
           >
-            <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold">
+            <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-sm leading-tight min-w-[2rem]">
               {user.name.charAt(0).toUpperCase()}
             </div>
             <span className="hidden md:inline text-sm">{user.name}</span>
