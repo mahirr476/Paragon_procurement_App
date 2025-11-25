@@ -1,4 +1,4 @@
-import { parseDate, parseCSV } from './csv-parser'
+import { parseDate, parseCSV } from '../../lib/csv-parser'
 
 describe('CSV Parser', () => {
   // ============================================
