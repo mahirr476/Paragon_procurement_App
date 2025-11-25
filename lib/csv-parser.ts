@@ -3,7 +3,7 @@ import { PurchaseOrder } from './types'
 /**
  * Parse date string in various formats (DD/MM/YY, DD/MM/YYYY, MM/DD/YY, etc.)
  */
-function parseDate(dateStr: string): Date | null {
+export function parseDate(dateStr: string): Date | null {
   if (!dateStr || !dateStr.trim()) return null
 
   const trimmed = dateStr.trim()
