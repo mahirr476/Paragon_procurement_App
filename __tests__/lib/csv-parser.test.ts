@@ -181,33 +181,28 @@ invalid-date,XYZ Ltd,PO-002,REF-002,21/03/24,Branch B,Type B,Group B,Item B,15,2
   })
 
   // ============================================
-  // FAILING TEST CASES - To understand issues
+  // Edge Cases: Number Parsing
   // ============================================
-  describe('parseCSV - Failing Test Cases (For Investigation)', () => {
-    test('FAILING: Numbers with commas should be parsed correctly (e.g., "1,000" → 1000)', () => {
-      // This test will FAIL because parseFloat("1,000") returns 1, not 1000
-      // The parser needs to remove commas BEFORE calling parseFloat
+  describe('parseCSV - Number Parsing Edge Cases', () => {
+    test('parses numbers with commas correctly (quoted "1,000" → 1000)', () => {
+      // Numbers with commas must be quoted in CSV to prevent splitting
+      // The parser removes commas and parses the number correctly
       const csv = `Date,Supplier,Order No.,Ref No.,Due Date,Branch,Requisition Type,Item/Ledger Group,Item,Min Qty,Max Qty,Unit,Rate,Delivery Date,CGST,SGST,IGST,VAT,Last Approved Rate,Last Supplier,Broker,Total Amount,Status,Delivery Type,Open PO,Open PO No.
-15/03/24,ABC Corp,PO-001,REF-001,20/03/24,Branch A,Type A,Group A,Item A,10,20,KG,100,25/03/24,9,9,0,0,95,ABC Corp,Broker A,1,000,Pending,Type A,Yes,PO-001`
+15/03/24,ABC Corp,PO-001,REF-001,20/03/24,Branch A,Type A,Group A,Item A,10,20,KG,100,25/03/24,9,9,0,0,95,ABC Corp,Broker A,"1,000",Pending,Type A,Yes,PO-001`
       
       const result = parseCSV(csv)
       
-      // Expected: totalAmount should be 1000
-      // Actual: Will likely be 1 (parseFloat stops at comma)
       expect(result[0].totalAmount).toBe(1000)
       expect(typeof result[0].totalAmount).toBe('number')
     })
 
-    test('FAILING: Invalid numbers should return 0, not NaN (e.g., "abc" → 0)', () => {
-      // This test will FAIL because parseFloat("abc") returns NaN
-      // The parser should handle NaN and convert it to 0
+    test('converts invalid numbers to 0 instead of NaN (e.g., "abc" → 0)', () => {
+      // The parser handles NaN and converts it to 0
       const csv = `Date,Supplier,Order No.,Ref No.,Due Date,Branch,Requisition Type,Item/Ledger Group,Item,Min Qty,Max Qty,Unit,Rate,Delivery Date,CGST,SGST,IGST,VAT,Last Approved Rate,Last Supplier,Broker,Total Amount,Status,Delivery Type,Open PO,Open PO No.
 15/03/24,ABC Corp,PO-001,REF-001,20/03/24,Branch A,Type A,Group A,Item A,10,20,KG,100,25/03/24,9,9,0,0,95,ABC Corp,Broker A,abc,Pending,Type A,Yes,PO-001`
       
       const result = parseCSV(csv)
       
-      // Expected: totalAmount should be 0 (invalid number)
-      // Actual: Will likely be NaN
       expect(result[0].totalAmount).toBe(0)
       expect(Number.isNaN(result[0].totalAmount)).toBe(false)
       expect(typeof result[0].totalAmount).toBe('number')

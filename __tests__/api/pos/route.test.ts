@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-import { GET, POST } from '../../../app/api/pos/route'
+import { GET, POST, PUT, DELETE } from '../../../app/api/pos/route'
 import { prisma } from '@/lib/prisma'
 import { NextRequest } from 'next/server'
 
@@ -11,6 +11,8 @@ jest.mock('@/lib/prisma', () => ({
     purchaseOrder: {
       findMany: jest.fn(),
       createMany: jest.fn(),
+      updateMany: jest.fn(),
+      deleteMany: jest.fn(),
     },
   },
 }))
@@ -404,6 +406,197 @@ describe('API /api/pos', () => {
         data: [mockPO],
         skipDuplicates: true,
       })
+    })
+  })
+
+  // ============================================
+  // ESSENTIAL: PUT /api/pos (Update POs)
+  // ============================================
+  describe('PUT /api/pos', () => {
+    test('updates single PO isApproved status', async () => {
+      mockedPrisma.purchaseOrder.updateMany.mockResolvedValue({ count: 1 } as any)
+
+      const request = new NextRequest('http://localhost/api/pos', {
+        method: 'PUT',
+        body: JSON.stringify({
+          poIds: ['PO-1'],
+          updates: { isApproved: true },
+        }),
+      })
+
+      const response = await PUT(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.success).toBe(true)
+      expect(data.count).toBe(1)
+
+      expect(mockedPrisma.purchaseOrder.updateMany).toHaveBeenCalledWith({
+        where: { id: { in: ['PO-1'] } },
+        data: { isApproved: true },
+      })
+    })
+
+    test('updates multiple POs', async () => {
+      mockedPrisma.purchaseOrder.updateMany.mockResolvedValue({ count: 3 } as any)
+
+      const request = new NextRequest('http://localhost/api/pos', {
+        method: 'PUT',
+        body: JSON.stringify({
+          poIds: ['PO-1', 'PO-2', 'PO-3'],
+          updates: { isApproved: true },
+        }),
+      })
+
+      const response = await PUT(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.success).toBe(true)
+      expect(data.count).toBe(3)
+    })
+
+    test('rejects empty PO IDs array', async () => {
+      const request = new NextRequest('http://localhost/api/pos', {
+        method: 'PUT',
+        body: JSON.stringify({
+          poIds: [],
+          updates: { isApproved: true },
+        }),
+      })
+
+      const response = await PUT(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(400)
+      expect(data.success).toBe(false)
+      expect(data.error).toBe('No purchase order IDs provided')
+
+      expect(mockedPrisma.purchaseOrder.updateMany).not.toHaveBeenCalled()
+    })
+
+    test('handles non-existent PO IDs (returns count 0)', async () => {
+      mockedPrisma.purchaseOrder.updateMany.mockResolvedValue({ count: 0 } as any)
+
+      const request = new NextRequest('http://localhost/api/pos', {
+        method: 'PUT',
+        body: JSON.stringify({
+          poIds: ['PO-NONEXISTENT'],
+          updates: { isApproved: true },
+        }),
+      })
+
+      const response = await PUT(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.success).toBe(true)
+      expect(data.count).toBe(0)
+    })
+
+    test('handles database errors gracefully', async () => {
+      mockedPrisma.purchaseOrder.updateMany.mockRejectedValue(
+        new Error('Database update failed')
+      )
+
+      const request = new NextRequest('http://localhost/api/pos', {
+        method: 'PUT',
+        body: JSON.stringify({
+          poIds: ['PO-1'],
+          updates: { isApproved: true },
+        }),
+      })
+
+      const response = await PUT(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(500)
+      expect(data.success).toBe(false)
+      expect(data.error).toBeDefined()
+    })
+  })
+
+  // ============================================
+  // ESSENTIAL: DELETE /api/pos (Delete POs)
+  // ============================================
+  describe('DELETE /api/pos', () => {
+    test('deletes single PO by ID', async () => {
+      mockedPrisma.purchaseOrder.deleteMany.mockResolvedValue({ count: 1 } as any)
+
+      const url = new URL('http://localhost/api/pos?ids=PO-1')
+      const request = new NextRequest(url, { method: 'DELETE' })
+
+      const response = await DELETE(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.success).toBe(true)
+
+      expect(mockedPrisma.purchaseOrder.deleteMany).toHaveBeenCalledWith({
+        where: { id: { in: ['PO-1'] } },
+      })
+    })
+
+    test('deletes multiple POs (comma-separated IDs)', async () => {
+      mockedPrisma.purchaseOrder.deleteMany.mockResolvedValue({ count: 3 } as any)
+
+      const url = new URL('http://localhost/api/pos?ids=PO-1,PO-2,PO-3')
+      const request = new NextRequest(url, { method: 'DELETE' })
+
+      const response = await DELETE(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.success).toBe(true)
+
+      expect(mockedPrisma.purchaseOrder.deleteMany).toHaveBeenCalledWith({
+        where: { id: { in: ['PO-1', 'PO-2', 'PO-3'] } },
+      })
+    })
+
+    test('handles empty ID list gracefully', async () => {
+      mockedPrisma.purchaseOrder.deleteMany.mockResolvedValue({ count: 0 } as any)
+
+      const url = new URL('http://localhost/api/pos?ids=')
+      const request = new NextRequest(url, { method: 'DELETE' })
+
+      const response = await DELETE(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.success).toBe(true)
+
+      // When ids= is empty, split(',') creates [''] - this is expected behavior
+      expect(mockedPrisma.purchaseOrder.deleteMany).toHaveBeenCalled()
+    })
+
+    test('handles non-existent IDs (still returns success)', async () => {
+      mockedPrisma.purchaseOrder.deleteMany.mockResolvedValue({ count: 0 } as any)
+
+      const url = new URL('http://localhost/api/pos?ids=PO-NONEXISTENT')
+      const request = new NextRequest(url, { method: 'DELETE' })
+
+      const response = await DELETE(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.success).toBe(true)
+    })
+
+    test('handles database errors gracefully', async () => {
+      mockedPrisma.purchaseOrder.deleteMany.mockRejectedValue(
+        new Error('Database deletion failed')
+      )
+
+      const url = new URL('http://localhost/api/pos?ids=PO-1')
+      const request = new NextRequest(url, { method: 'DELETE' })
+
+      const response = await DELETE(request)
+      const data = await response.json()
+
+      expect(response.status).toBe(500)
+      expect(data.success).toBe(false)
+      expect(data.error).toBeDefined()
     })
   })
 })
