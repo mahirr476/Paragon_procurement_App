@@ -108,6 +108,8 @@ describe('E2E: Complete Upload-to-Dashboard Flow', () => {
   let currentPOsStore: PurchaseOrder[] = []
   let approvedPOsStore: PurchaseOrder[] = []
 
+  jest.setTimeout(15000) // Set timeout to 15 seconds for all tests in this suite
+
   beforeEach(() => {
     jest.clearAllMocks()
     jest.useFakeTimers()

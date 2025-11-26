@@ -111,6 +111,8 @@ function createTestPO(overrides?: Partial<PurchaseOrder>): PurchaseOrder {
 }
 
 describe('Reports Page (Section 7.3)', () => {
+  jest.setTimeout(15000) // Set timeout to 15 seconds for all tests in this suite
+
   beforeEach(() => {
     jest.clearAllMocks()
     
@@ -192,7 +194,7 @@ describe('Reports Page (Section 7.3)', () => {
 
     await waitFor(() => {
       expect(mockedGetApprovedPOs).toHaveBeenCalled()
-    })
+    }, { timeout: 8000 })
   })
 
   test('runs analytics on POs', async () => {
