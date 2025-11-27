@@ -86,6 +86,29 @@ services:
       - "5565:5565"
     restart: unless-stopped
 
+  # Jest test runner (execute with `docker compose up tests`)
+  tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: procurement-tests
+    working_dir: /app
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/procurement_db?schema=public
+      CI: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    command: >
+      sh -c "
+        npm install --legacy-peer-deps &&
+        npm test -- --runInBand
+      "
+    restart: "no"
+
 volumes:
   postgres_data:
     driver: local
