@@ -1,9 +1,21 @@
 import { PurchaseOrder } from './types'
 
 /**
+ * Parse a number string, handling commas and invalid values
+ * Returns 0 for invalid/NaN values
+ */
+function parseNumber(value: string | undefined): number {
+  if (!value) return 0
+  const cleaned = value.replace(/,/g, '').trim()
+  if (!cleaned) return 0
+  const num = parseFloat(cleaned)
+  return isNaN(num) ? 0 : num
+}
+
+/**
  * Parse date string in various formats (DD/MM/YY, DD/MM/YYYY, MM/DD/YY, etc.)
  */
-function parseDate(dateStr: string): Date | null {
+export function parseDate(dateStr: string): Date | null {
   if (!dateStr || !dateStr.trim()) return null
 
   const trimmed = dateStr.trim()
@@ -98,30 +110,30 @@ export function parseCSV(csvText: string): PurchaseOrder[] {
         requisitionType: values[6]?.trim() || '',
         itemLedgerGroup: values[7]?.trim() || '',
         item: values[8]?.trim() || '',
-        minQty: parseFloat(values[9]?.replace(/,/g, '')?.trim() || '0'),
-        maxQty: parseFloat(values[10]?.replace(/,/g, '')?.trim() || '0'),
+        minQty: parseNumber(values[9]),
+        maxQty: parseNumber(values[10]),
         // OLD: Unit at 11 | NEW: Weight at 11, Unit at 12
         unit: hasWeightColumn ? values[12]?.trim() || '' : values[11]?.trim() || '',
         // OLD: Rate at 12 | NEW: Rate at 13
-        rate: parseFloat(values[hasWeightColumn ? 13 : 12]?.replace(/,/g, '')?.trim() || '0'),
+        rate: parseNumber(values[hasWeightColumn ? 13 : 12]),
         // OLD: Delivery Date at 13 | NEW: Pending Wt. at 14, Delivery Date at 15
         deliveryDate: hasWeightColumn ? values[15]?.trim() || '' : values[13]?.trim() || '',
         // OLD: CGST at 14 | NEW: CGST at 16
-        cgst: parseFloat(values[hasWeightColumn ? 16 : 14]?.trim() || '0'),
+        cgst: parseNumber(values[hasWeightColumn ? 16 : 14]),
         // OLD: SGST at 15 | NEW: SGST at 17
-        sgst: parseFloat(values[hasWeightColumn ? 17 : 15]?.trim() || '0'),
+        sgst: parseNumber(values[hasWeightColumn ? 17 : 15]),
         // OLD: IGST at 16 | NEW: IGST at 18
-        igst: parseFloat(values[hasWeightColumn ? 18 : 16]?.trim() || '0'),
+        igst: parseNumber(values[hasWeightColumn ? 18 : 16]),
         // OLD: VAT at 17 | NEW: VAT at 19
-        vat: parseFloat(values[hasWeightColumn ? 19 : 17]?.trim() || '0'),
+        vat: parseNumber(values[hasWeightColumn ? 19 : 17]),
         // OLD: Last Approved Rate at 18 | NEW: at 20
-        lastApprovedRate: parseFloat(values[hasWeightColumn ? 20 : 18]?.replace(/,/g, '')?.trim() || '0'),
+        lastApprovedRate: parseNumber(values[hasWeightColumn ? 20 : 18]),
         // OLD: Last Supplier at 19 | NEW: at 21
         lastSupplier: values[hasWeightColumn ? 21 : 19]?.trim() || '',
         // OLD: Broker at 20 | NEW: at 22
         broker: values[hasWeightColumn ? 22 : 20]?.trim() || '',
         // OLD: Total Amount at 21 | NEW: at 23
-        totalAmount: parseFloat(values[hasWeightColumn ? 23 : 21]?.replace(/,/g, '')?.trim() || '0'),
+        totalAmount: parseNumber(values[hasWeightColumn ? 23 : 21]),
         // OLD: Status at 22 | NEW: at 24
         status: values[hasWeightColumn ? 24 : 22]?.trim() || 'pending',
         // OLD: Delivery Type at 23 | NEW: at 25
