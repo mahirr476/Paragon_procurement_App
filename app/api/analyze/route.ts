@@ -40,26 +40,123 @@ APPROVED POs:
 ${JSON.stringify(poContext.approvedPOs, null, 2)}
 `;
 
-    // Groq endpoint
-    const aiRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        messages: [
-          { role: "system", content: "You are a procurement analytics expert." },
-          { role: "user", content: prompt }
-        ],
-        max_tokens: 800,
-        temperature: 0.7
-      }),
-    });
+    // Check if API key is set
+    if (!process.env.GROQ_API_KEY) {
+      console.error("GROQ_API_KEY is not set in environment variables");
+      console.error("Available env vars:", Object.keys(process.env).filter(k => k.includes("GROQ") || k.includes("API")));
+      return Response.json({ 
+        error: "API key not configured. Please set GROQ_API_KEY in your environment variables or .env.local file." 
+      }, { status: 500 });
+    }
+
+    console.log("GROQ_API_KEY is configured");
+
+    // Try models in order of preference (fallback if rate limited)
+    const models = [
+      "llama-3.3-70b-versatile",
+      "llama-3.1-8b-instant", // Smaller, faster model as fallback
+      "mixtral-8x7b-32768"
+    ];
+
+    let aiRes;
+    let lastError;
+    
+    // Try each model until one works
+    for (const model of models) {
+      try {
+        console.log(`Trying model: ${model}`);
+        aiRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: [
+              { role: "system", content: "You are a procurement analytics expert. Provide concise, actionable insights." },
+              { role: "user", content: prompt }
+            ],
+            max_tokens: 500, // Reduced from 800 to save tokens
+            temperature: 0.7
+          }),
+        });
+
+        // If successful, break out of loop
+        if (aiRes.ok) {
+          break;
+        }
+
+        // If rate limited, try next model
+        if (aiRes.status === 429) {
+          const errorData = await aiRes.json().catch(() => ({}));
+          lastError = {
+            error: errorData.error?.message || errorData.error || "Rate limit reached",
+            status: 429
+          };
+          console.log(`Model ${model} rate limited, trying next model...`);
+          continue;
+        }
+
+        // For other errors, break and handle
+        break;
+      } catch (err) {
+        console.error(`Error with model ${model}:`, err);
+        lastError = err;
+        continue;
+      }
+    }
+
+    if (!aiRes || !aiRes.ok) {
+      let errorData;
+      if (aiRes) {
+        errorData = await aiRes.json().catch(() => ({ error: "Unknown error" }));
+      } else {
+        errorData = lastError || { error: "All models rate limited" };
+      }
+      
+      console.error("Groq API error:", {
+        status: aiRes?.status,
+        statusText: aiRes?.statusText,
+        error: errorData
+      });
+      
+      // Handle rate limit errors specifically
+      const errorMessage = errorData.error?.message || errorData.error || "Failed to get response";
+      const fullErrorMessage = typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage);
+      
+      if (fullErrorMessage.includes("Rate limit") || fullErrorMessage.includes("rate limit") || aiRes?.status === 429 || !aiRes) {
+        // Extract the time remaining if available
+        const timeMatch = fullErrorMessage.match(/Please try again in ([^.]+)/);
+        const timeInfo = timeMatch ? ` Please try again in ${timeMatch[1]}.` : "";
+        return Response.json({ 
+          error: `Rate limit reached for all available models.${timeInfo} Need more tokens? Upgrade at https://console.groq.com/settings/billing` 
+        }, { status: 429 });
+      }
+      
+      return Response.json({ 
+        error: `Groq API error: ${fullErrorMessage}` 
+      }, { status: aiRes?.status || 500 });
+    }
 
     const aiData = await aiRes.json();
-    const analysis = aiData?.choices?.[0]?.message?.content || "No response";
+    
+    // Check if response has the expected structure
+    if (!aiData?.choices || !Array.isArray(aiData.choices) || aiData.choices.length === 0) {
+      console.error("Unexpected Groq API response structure:", JSON.stringify(aiData, null, 2));
+      return Response.json({ 
+        error: "Unexpected response format from AI service" 
+      }, { status: 500 });
+    }
+
+    const analysis = aiData.choices[0]?.message?.content;
+    
+    if (!analysis) {
+      console.error("No content in Groq API response:", JSON.stringify(aiData, null, 2));
+      return Response.json({ 
+        error: "AI service returned empty response" 
+      }, { status: 500 });
+    }
 
     return Response.json({ analysis });
 

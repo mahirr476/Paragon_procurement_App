@@ -17,9 +17,11 @@ import {
   Loader2,
 } from "lucide-react"
 import { getChatSessions, saveChatSession, deleteChatSession, generateChatTitle } from "@/lib/storage"
+import { getCurrentUser } from "@/lib/auth"
 import type { ChatSession, ChatMessage } from "@/lib/types"
 
 export default function IntelligencePage() {
+  const [userId, setUserId] = useState<string | null>(null)
   const [sessions, setSessions] = useState<ChatSession[]>([])
   const [activeSession, setActiveSession] = useState<ChatSession | null>(null)
   const [input, setInput] = useState("")
@@ -27,51 +29,134 @@ export default function IntelligencePage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
+  // Get current user ID on mount
   useEffect(() => {
+    const user = getCurrentUser()
+    if (user) {
+      setUserId(user.id)
+    } else {
+      console.warn("No user logged in - chat features disabled")
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!userId) return
+
     const loadSessions = async () => {
-      const loadedSessions = await getChatSessions("default-user")
+      const loadedSessions = await getChatSessions(userId)
       setSessions(Array.isArray(loadedSessions) ? loadedSessions : [])
     }
     loadSessions()
-  }, [])
+  }, [userId])
 
-  const createNewChat = () => {
-    const newSession: ChatSession = {
-      id: Date.now().toString(),
-      title: "New Chat",
-      messages: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+  const createNewChat = async () => {
+    if (!userId) {
+      console.error("Cannot create chat: No user logged in")
+      return
     }
-    setActiveSession(newSession)
+
+    try {
+      const response = await fetch("/api/chat/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: userId,
+          title: "New Chat",
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to create chat session")
+      }
+
+      const data = await response.json()
+      if (!data.success) {
+        throw new Error(data.error || "Failed to create chat session")
+      }
+
+      const session = data.session as any
+      const normalizedSession: ChatSession = {
+        ...session,
+        createdAt: new Date(session.createdAt),
+        updatedAt: new Date(session.updatedAt),
+        messages: (session.messages ?? []).map((m: any) => ({
+          ...m,
+          timestamp: new Date(m.timestamp),
+        })),
+      }
+
+      setActiveSession(normalizedSession)
+      // Reload sessions to include the new one
+      const updatedSessions = await getChatSessions(userId)
+      setSessions(Array.isArray(updatedSessions) ? updatedSessions : [])
+    } catch (error) {
+      console.error("Failed to create new chat session", error)
+    }
   }
 
   const handleSendMessage = async () => {
-    if (!input.trim() || isLoading || !activeSession) return
+    if (!input.trim() || isLoading || !activeSession || !userId) return
+
+    const userInput = input
+    setInput("")
+    setIsLoading(true)
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: "user",
-      content: input,
+      content: userInput,
       timestamp: new Date(),
     }
 
+    const updatedMessages = [...activeSession.messages, userMessage]
     const updatedSession = {
       ...activeSession,
-      messages: [...activeSession.messages, userMessage],
-      title: activeSession.messages.length === 0 ? generateChatTitle(input) : activeSession.title,
+      messages: updatedMessages,
+      title: activeSession.messages.length === 0 ? generateChatTitle(userInput) : activeSession.title,
       updatedAt: new Date(),
     }
 
     setActiveSession(updatedSession)
-    setInput("")
-    setIsLoading(true)
+
+    // Update title if this is the first message
+    if (activeSession.messages.length === 0 && updatedSession.title !== activeSession.title) {
+      try {
+        if (userId && activeSession.id) {
+          const saveResult = await saveChatSession(userId, updatedSession)
+          if (!saveResult.success) {
+            console.error("Failed to save chat session title:", saveResult.error)
+          }
+        }
+      } catch (error) {
+        console.error("Failed to save chat session title", error)
+      }
+    }
 
     try {
+      // Persist user message to the database
+      try {
+        const userMsgResponse = await fetch("/api/chat/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId: activeSession.id,
+            role: "user",
+            content: userInput,
+          }),
+        })
+        if (!userMsgResponse.ok) {
+          const errorData = await userMsgResponse.json()
+          console.error("Failed to save user message:", errorData.error || "Unknown error")
+        }
+      } catch (error) {
+        console.error("Failed to save user message", error)
+      }
+
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: input }),
+        body: JSON.stringify({ query: userInput }),
       })
 
       if (!response.ok) throw new Error("Analysis failed")
@@ -84,15 +169,43 @@ export default function IntelligencePage() {
         timestamp: new Date(),
       }
 
+      const finalMessages = [...updatedMessages, assistantMessage]
       const finalSession = {
         ...updatedSession,
-        messages: [...updatedSession.messages, assistantMessage],
+        messages: finalMessages,
         updatedAt: new Date(),
       }
 
       setActiveSession(finalSession)
-      await saveChatSession("default-user", finalSession)
-      const updatedSessions = await getChatSessions("default-user")
+
+      // Persist assistant message and update session
+      try {
+        const assistantMsgResponse = await fetch("/api/chat/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId: activeSession.id,
+            role: "assistant",
+            content: assistantMessage.content,
+          }),
+        })
+        if (!assistantMsgResponse.ok) {
+          const errorData = await assistantMsgResponse.json()
+          console.error("Failed to save assistant message:", errorData.error || "Unknown error")
+        }
+
+        if (userId && activeSession.id) {
+          const saveResult = await saveChatSession(userId, finalSession)
+          if (!saveResult.success) {
+            console.error("Failed to save chat session:", saveResult.error)
+          }
+        }
+      } catch (error) {
+        console.error("Failed to save assistant message or session", error)
+      }
+
+      // Reload sessions to get latest data
+      const updatedSessions = await getChatSessions(userId)
       setSessions(Array.isArray(updatedSessions) ? updatedSessions : [])
     } catch (err) {
       console.error("[v0] AI analysis error:", err)
@@ -102,8 +215,9 @@ export default function IntelligencePage() {
   }
 
   const handleDeleteChat = async (sessionId: string) => {
+    if (!userId) return
     await deleteChatSession(sessionId)
-    const updatedSessions = await getChatSessions("default-user")
+    const updatedSessions = await getChatSessions(userId)
     setSessions(Array.isArray(updatedSessions) ? updatedSessions : [])
     if (activeSession?.id === sessionId) {
       setActiveSession(null)
