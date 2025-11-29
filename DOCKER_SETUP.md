@@ -21,7 +21,7 @@ npm run docker:dev:down
 
 The development setup includes:
 - **Live Reload**: Code changes automatically reflect in the container
-- **PostgreSQL Database**: Local database on port 5433
+- **PostgreSQL Database**: Local database on port 5434
 - **Prisma Studio**: Database GUI on http://localhost:5555
 - **Next.js Dev Server**: Running on http://localhost:3000
 
@@ -135,7 +135,7 @@ npx prisma migrate dev
 
 ### Port Conflicts
 
-If ports 3000, 5433, or 5555 are already in use:
+If ports 3000, 5434, or 5555 are already in use:
 
 1. Stop conflicting services
 2. Or modify ports in `docker-compose.dev.yml`:
