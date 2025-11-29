@@ -40,10 +40,7 @@ services:
       NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}
       NODE_ENV: development
 
-<<<<<<< HEAD
-=======
-      # GROQ_API_KEY: "your-secret-api-key"
->>>>>>> d8d3e65 (Fix: Use environment variable for GROQ_API_KEY)
+
       GROQ_API_KEY: ${GROQ_API_KEY}
       
       # Enable hot reload polling for Docker
