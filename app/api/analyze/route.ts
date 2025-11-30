@@ -1,17 +1,21 @@
 export async function POST(request: Request) {
   try {
     const { query } = await request.json();
+    
     if (!query || typeof query !== "string") {
       return Response.json({ error: "Invalid query" }, { status: 400 });
     }
 
+    // Use environment variable for base URL (better for Docker)
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    
     // Fetch PO data
-    const approvedRes = await fetch("http://localhost:3000/api/pos?approved=true");
+    const approvedRes = await fetch(`${baseUrl}/api/pos?approved=true`);
     const approvedJson = await approvedRes.json();
-
-    const currentRes = await fetch("http://localhost:3000/api/pos?approved=false");
+    
+    const currentRes = await fetch(`${baseUrl}/api/pos?approved=false`);
     const currentJson = await currentRes.json();
-
+    
     const approvedPOs = approvedJson.pos ?? [];
     const currentPOs = currentJson.pos ?? [];
 
@@ -47,17 +51,87 @@ Summary: ${summary.totalCurrentPOs} current POs (₹${summary.totalCurrentAmount
 Current POs (sample): ${JSON.stringify(currentPOsSample)}
 Approved POs (sample): ${JSON.stringify(approvedPOsSample)}`;
 
-    // Check if API key is set
-    if (!process.env.GROQ_API_KEY) {
-      console.error("GROQ_API_KEY is not set in environment variables");
-      console.error("Available env vars:", Object.keys(process.env).filter(k => k.includes("GROQ") || k.includes("API")));
+    // Try Gemini first (FREE & FAST)
+    let analysis = await tryGemini(prompt);
+    
+    // If Gemini fails, fallback to Groq
+    if (!analysis) {
+      console.log("⚠️ Gemini failed, trying Groq fallback...");
+      analysis = await tryGroq(prompt);
+    }
+    
+    if (!analysis) {
       return Response.json({ 
-        error: "API key not configured. Please set GROQ_API_KEY in your environment variables or .env.local file." 
-      }, { status: 500 });
+        error: "All AI providers are currently unavailable. Please try again later." 
+      }, { status: 503 });
+    }
+    
+    return Response.json({ analysis });
+    
+  } catch (err) {
+    console.error("AI Analysis Error:", err);
+    return Response.json({ 
+      error: "Failed to analyze data" 
+    }, { status: 500 });
+  }
+}
+
+// Try Gemini API (Primary - Free & Fast)
+async function tryGemini(prompt: string): Promise<string | null> {
+  try {
+    if (!process.env.GEMINI_API_KEY) {
+      console.log("⚠️ GEMINI_API_KEY not configured");
+      return null;
     }
 
-    console.log("GROQ_API_KEY is configured");
+    console.log("🔵 Trying GEMINI...");
+    
+    const aiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            maxOutputTokens: 800,
+            temperature: 0.7
+          }
+        }),
+      }
+    );
+    
+    if (!aiRes.ok) {
+      const errorData = await aiRes.json().catch(() => ({}));
+      console.error("❌ Gemini error:", aiRes.status, errorData);
+      return null;
+    }
+    
+    const aiData = await aiRes.json();
+    const analysis = aiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+    
+    if (analysis) {
+      console.log("✅ Gemini succeeded");
+      return analysis;
+    }
+    
+    return null;
+  } catch (err) {
+    console.error("❌ Gemini exception:", err);
+    return null;
+  }
+}
 
+// Try Groq API (Fallback - Fast)
+async function tryGroq(prompt: string): Promise<string | null> {
+  try {
+    if (!process.env.GROQ_API_KEY) {
+      console.log("⚠️ GROQ_API_KEY not configured");
+      return null;
+    }
+
+    console.log("🟢 Trying GROQ...");
+    
     // Try models in order of preference (higher token limits first)
     // llama-3.3-70b-versatile has higher TPM limits than llama-3.1-8b-instant
     const models = [
@@ -66,14 +140,11 @@ Approved POs (sample): ${JSON.stringify(approvedPOsSample)}`;
       "llama-3.1-8b-instant" // Lower token limit, use as last resort
     ];
 
-    let aiRes;
-    let lastError;
-    
-    // Try each model until one works
     for (const model of models) {
       try {
-        console.log(`Trying model: ${model}`);
-        aiRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        console.log(`  → Trying model: ${model}`);
+        
+        const aiRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
@@ -85,196 +156,335 @@ Approved POs (sample): ${JSON.stringify(approvedPOsSample)}`;
               { role: "system", content: "You are a procurement analytics expert. Provide concise, actionable insights." },
               { role: "user", content: prompt }
             ],
-            max_tokens: 500, // Reduced from 800 to save tokens
+            max_tokens: 500,
             temperature: 0.7
           }),
         });
 
-        // If successful, break out of loop
         if (aiRes.ok) {
-          break;
+          const aiData = await aiRes.json();
+          const analysis = aiData?.choices?.[0]?.message?.content;
+          
+          if (analysis) {
+            console.log(`✅ Groq succeeded with ${model}`);
+            return analysis;
+          }
         }
 
         // If rate limited or request too large, try next model
         if (aiRes.status === 429) {
-          let errorData: any = {};
-          try {
-            errorData = await aiRes.json();
-          } catch (e) {
-            const text = await aiRes.text().catch(() => "");
-            errorData = { error: text || "Rate limit reached" };
-          }
-          const errorMsg = errorData.error?.message || errorData.error || errorData.message || "Rate limit reached";
-          lastError = {
-            error: errorMsg,
-            status: 429
-          };
-          console.log(`Model ${model} rate limited, trying next model...`);
+          console.log(`  ⚠️ Rate limited, trying next model...`);
           continue;
         }
 
         // If request too large, try next model with higher limits
         if (aiRes.status === 400 || aiRes.status === 413) {
-          let errorData: any = {};
-          try {
-            errorData = await aiRes.json();
-          } catch (e) {
-            const text = await aiRes.text().catch(() => "");
-            errorData = { error: text || "Request too large" };
-          }
-          const errorMsg = errorData.error?.message || errorData.error || errorData.message || "Request too large";
-          if (errorMsg.includes("too large") || errorMsg.includes("Request too large") || errorMsg.includes("TPM") || errorMsg.includes("tokens per minute")) {
-            lastError = {
-              error: errorMsg,
-              status: aiRes.status
-            };
-            console.log(`Model ${model} request too large, trying next model with higher limits...`);
+          const errorText = await aiRes.text().catch(() => "");
+          if (errorText.includes("too large") || errorText.includes("TPM") || errorText.includes("tokens per minute")) {
+            console.log(`  ⚠️ Request too large, trying next model with higher limits...`);
             continue;
           }
         }
 
-        // For other errors, break and handle
-        console.log(`Model ${model} failed with status ${aiRes.status}, stopping model iteration`);
-        break;
+        // For other errors, continue to next model
+        console.log(`  ⚠️ Model ${model} failed with status ${aiRes.status}, trying next model...`);
+        continue;
       } catch (err) {
-        console.error(`Error with model ${model}:`, err);
-        lastError = err;
+        console.error(`  ❌ Error with ${model}:`, err);
         continue;
       }
     }
-
-    if (!aiRes || !aiRes.ok) {
-      let errorData: any = {};
-      let errorText = "";
-      
-      if (aiRes) {
-        try {
-          // Try to parse as JSON first
-          errorData = await aiRes.json();
-        } catch (jsonError) {
-          // If JSON parsing fails, try to get text response
-          try {
-            errorText = await aiRes.text();
-            console.error("Groq API returned non-JSON error:", errorText);
-            // Try to extract error from text
-            errorData = { error: errorText || "Unknown error" };
-          } catch (textError) {
-            console.error("Failed to read error response:", textError);
-            errorData = { error: `HTTP ${aiRes.status}: ${aiRes.statusText || "Unknown error"}` };
-          }
-        }
-      } else {
-        errorData = lastError || { error: "All models failed" };
-      }
-      
-      console.error("Groq API error:", {
-        status: aiRes?.status,
-        statusText: aiRes?.statusText,
-        error: errorData,
-        errorText: errorText
-      });
-      
-      // Extract error message from various possible structures
-      let errorMessage = "";
-      if (errorData?.error) {
-        if (typeof errorData.error === 'string') {
-          errorMessage = errorData.error;
-        } else if (errorData.error?.message) {
-          errorMessage = errorData.error.message;
-        } else if (errorData.error?.error?.message) {
-          errorMessage = errorData.error.error.message;
-        } else {
-          errorMessage = JSON.stringify(errorData.error);
-        }
-      } else if (errorData?.message) {
-        errorMessage = errorData.message;
-      } else if (errorText) {
-        errorMessage = errorText;
-      } else {
-        errorMessage = errorData?.error || `HTTP ${aiRes?.status || 500}: ${aiRes?.statusText || "Unknown error"}`;
-      }
-      
-      const fullErrorMessage = typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage);
-      
-      // Handle invalid API key errors specifically
-      if (aiRes?.status === 401 || 
-          fullErrorMessage.includes("Invalid API Key") || 
-          fullErrorMessage.includes("invalid api key") ||
-          fullErrorMessage.includes("authentication") ||
-          fullErrorMessage.includes("Unauthorized")) {
-        return Response.json({ 
-          error: "Invalid API Key. Please check your GROQ_API_KEY in your .env.local file. Get your API key at https://console.groq.com/keys" 
-        }, { status: 401 });
-      }
-      
-      // Handle "Request too large" / TPM limit errors
-      if (fullErrorMessage.includes("too large") || 
-          fullErrorMessage.includes("Request too large") || 
-          fullErrorMessage.includes("TPM") ||
-          fullErrorMessage.includes("tokens per minute") ||
-          aiRes?.status === 413) {
-        return Response.json({ 
-          error: `Request too large for available models. The data is too extensive. Please try a more specific question or upgrade your Groq account at https://console.groq.com/settings/billing` 
-        }, { status: 413 });
-      }
-      
-      if (fullErrorMessage.includes("Rate limit") || fullErrorMessage.includes("rate limit") || aiRes?.status === 429 || !aiRes) {
-        // Extract the time remaining if available
-        const timeMatch = fullErrorMessage.match(/Please try again in ([^.]+)/);
-        const timeInfo = timeMatch ? ` Please try again in ${timeMatch[1]}.` : "";
-        return Response.json({ 
-          error: `Rate limit reached for all available models.${timeInfo} Need more tokens? Upgrade at https://console.groq.com/settings/billing` 
-        }, { status: 429 });
-      }
-      
-      // For unknown errors, provide more context
-      const statusCode = aiRes?.status || 500;
-      const statusMessage = aiRes?.statusText || "Internal Server Error";
-      
-      return Response.json({ 
-        error: fullErrorMessage || `Groq API error (${statusCode}): ${statusMessage}. Please check the console for more details.` 
-      }, { status: statusCode });
-    }
-
-    const aiData = await aiRes.json();
     
-    // Check if response has the expected structure
-    if (!aiData?.choices || !Array.isArray(aiData.choices) || aiData.choices.length === 0) {
-      console.error("Unexpected Groq API response structure:", JSON.stringify(aiData, null, 2));
-      return Response.json({ 
-        error: "Unexpected response format from AI service" 
-      }, { status: 500 });
-    }
-
-    const analysis = aiData.choices[0]?.message?.content;
-    
-    if (!analysis) {
-      console.error("No content in Groq API response:", JSON.stringify(aiData, null, 2));
-      return Response.json({ 
-        error: "AI service returned empty response" 
-      }, { status: 500 });
-    }
-
-    return Response.json({ analysis });
-
+    console.log("❌ All Groq models failed");
+    return null;
   } catch (err) {
-    console.error("Groq Analysis Error:", err);
-    
-    // Extract meaningful error message
-    let errorMessage = "Failed to analyze data";
-    if (err instanceof Error) {
-      errorMessage = err.message;
-    } else if (typeof err === 'string') {
-      errorMessage = err;
-    } else if (err && typeof err === 'object' && 'message' in err) {
-      errorMessage = String((err as any).message);
-    }
-    
-    return Response.json({ 
-      error: errorMessage || "An unexpected error occurred while analyzing your request. Please try again." 
-    }, { status: 500 });
+    console.error("❌ Groq exception:", err);
+    return null;
   }
 }
+
+
+
+
+
+
+// export async function POST(request: Request) {
+//   try {
+//     const { query } = await request.json();
+    
+//     if (!query || typeof query !== "string") {
+//       return Response.json({ error: "Invalid query" }, { status: 400 });
+//     }
+
+//     // Use environment variable for base URL (better for Docker)
+//     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    
+//     // Fetch PO data
+//     const approvedRes = await fetch(`${baseUrl}/api/pos?approved=true`);
+//     const approvedJson = await approvedRes.json();
+    
+//     const currentRes = await fetch(`${baseUrl}/api/pos?approved=false`);
+//     const currentJson = await currentRes.json();
+    
+//     const approvedPOs = approvedJson.pos ?? [];
+//     const currentPOs = currentJson.pos ?? [];
+    
+//     const poContext = {
+//       summary: {
+//         totalCurrentPOs: currentPOs.length,
+//         totalApprovedPOs: approvedPOs.length,
+//         totalCurrentAmount: currentPOs.reduce((s, p) => s + (p.totalAmount ?? 0), 0),
+//         totalApprovedAmount: approvedPOs.reduce((s, p) => s + (p.totalAmount ?? 0), 0),
+//         uniqueSuppliers: new Set([...currentPOs, ...approvedPOs].map(p => p.supplier)).size,
+//       },
+//       currentPOs: currentPOs.slice(0, 20),
+//       approvedPOs: approvedPOs.slice(0, 20)
+//     };
+    
+//     const prompt = `
+// You are a procurement analyst. Answer this question: "${query}"
+
+// SUMMARY:
+// ${JSON.stringify(poContext.summary, null, 2)}
+
+// CURRENT POs:
+// ${JSON.stringify(poContext.currentPOs, null, 2)}
+
+// APPROVED POs:
+// ${JSON.stringify(poContext.approvedPOs, null, 2)}
+// `;
+
+//     if (!process.env.GEMINI_API_KEY) {
+//       console.error("GEMINI_API_KEY is not set");
+//       return Response.json({ 
+//         error: "API key not configured" 
+//       }, { status: 500 });
+//     }
+
+//     console.log("=== GEMINI REQUEST ===");
+//     console.log("Query:", query);
+    
+//     // Using gemini-2.5-flash (LATEST, FASTEST, FREE!)
+//     const aiRes = await fetch(
+//       `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+//       {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//         body: JSON.stringify({
+//           contents: [{
+//             parts: [{ text: prompt }]
+//           }],
+//           generationConfig: {
+//             maxOutputTokens: 800,
+//             temperature: 0.7
+//           }
+//         }),
+//       }
+//     );
+    
+//     if (!aiRes.ok) {
+//       const errorData = await aiRes.json().catch(() => ({ error: "Unknown error" }));
+//       console.error("Gemini API error:", {
+//         status: aiRes.status,
+//         statusText: aiRes.statusText,
+//         error: errorData
+//       });
+      
+//       return Response.json({ 
+//         error: `Gemini API error: ${JSON.stringify(errorData)}` 
+//       }, { status: aiRes.status || 500 });
+//     }
+    
+//     const aiData = await aiRes.json();
+    
+//     console.log("=== GEMINI FULL RESPONSE ===");
+//     console.log(JSON.stringify(aiData, null, 2));
+    
+//     const analysis = aiData?.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
+    
+//     console.log("=== GEMINI ANALYSIS ===");
+//     console.log(analysis);
+//     console.log("======================");
+    
+//     return Response.json({ analysis });
+    
+//   } catch (err) {
+//     console.error("Gemini Analysis Error:", err);
+//     return Response.json({ 
+//       error: "Failed to analyze data" 
+//     }, { status: 500 });
+//   }
+// }
+
+// export async function POST(request: Request) {
+//   try {
+//     const { query } = await request.json();
+//     if (!query || typeof query !== "string") {
+//       return Response.json({ error: "Invalid query" }, { status: 400 });
+//     }
+
+//     // Fetch PO data
+//     const approvedRes = await fetch("http://localhost:3000/api/pos?approved=true");
+//     const approvedJson = await approvedRes.json();
+
+//     const currentRes = await fetch("http://localhost:3000/api/pos?approved=false");
+//     const currentJson = await currentRes.json();
+
+//     const approvedPOs = approvedJson.pos ?? [];
+//     const currentPOs = currentJson.pos ?? [];
+
+//     const poContext = {
+//       summary: {
+//         totalCurrentPOs: currentPOs.length,
+//         totalApprovedPOs: approvedPOs.length,
+//         totalCurrentAmount: currentPOs.reduce((s, p) => s + (p.totalAmount ?? 0), 0),
+//         totalApprovedAmount: approvedPOs.reduce((s, p) => s + (p.totalAmount ?? 0), 0),
+//         uniqueSuppliers: new Set([...currentPOs, ...approvedPOs].map(p => p.supplier)).size,
+//       },
+//       currentPOs: currentPOs.slice(0, 20),
+//       approvedPOs: approvedPOs.slice(0, 20)
+//     };
+
+//     const prompt = `
+// You are a procurement analyst. Answer this question: "${query}"
+
+// SUMMARY:
+// ${JSON.stringify(poContext.summary, null, 2)}
+
+// CURRENT POs:
+// ${JSON.stringify(poContext.currentPOs, null, 2)}
+
+// APPROVED POs:
+// ${JSON.stringify(poContext.approvedPOs, null, 2)}
+// `;
+
+//     // Check if API key is set
+//     if (!process.env.GROQ_API_KEY) {
+//       console.error("GROQ_API_KEY is not set in environment variables");
+//       console.error("Available env vars:", Object.keys(process.env).filter(k => k.includes("GROQ") || k.includes("API")));
+//       return Response.json({ 
+//         error: "API key not configured. Please set GROQ_API_KEY in your environment variables or .env.local file." 
+//       }, { status: 500 });
+//     }
+
+//     console.log("GROQ_API_KEY is configured");
+
+//     // Try models in order of preference (fallback if rate limited)
+//     const models = [
+//       "llama-3.3-70b-versatile",
+//       "llama-3.1-8b-instant", // Smaller, faster model as fallback
+//       "mixtral-8x7b-32768"
+//     ];
+
+//     let aiRes;
+//     let lastError;
+    
+//     // Try each model until one works
+//     for (const model of models) {
+//       try {
+//         console.log(`Trying model: ${model}`);
+//         aiRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+//           method: "POST",
+//           headers: {
+//             "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+//             "Content-Type": "application/json",
+//           },
+//           body: JSON.stringify({
+//             model: model,
+//             messages: [
+//               { role: "system", content: "You are a procurement analytics expert. Provide concise, actionable insights." },
+//               { role: "user", content: prompt }
+//             ],
+//             max_tokens: 500, // Reduced from 800 to save tokens
+//             temperature: 0.7
+//           }),
+//         });
+
+//         // If successful, break out of loop
+//         if (aiRes.ok) {
+//           break;
+//         }
+
+//         // If rate limited, try next model
+//         if (aiRes.status === 429) {
+//           const errorData = await aiRes.json().catch(() => ({}));
+//           lastError = {
+//             error: errorData.error?.message || errorData.error || "Rate limit reached",
+//             status: 429
+//           };
+//           console.log(`Model ${model} rate limited, trying next model...`);
+//           continue;
+//         }
+
+//         // For other errors, break and handle
+//         break;
+//       } catch (err) {
+//         console.error(`Error with model ${model}:`, err);
+//         lastError = err;
+//         continue;
+//       }
+//     }
+
+//     if (!aiRes || !aiRes.ok) {
+//       let errorData;
+//       if (aiRes) {
+//         errorData = await aiRes.json().catch(() => ({ error: "Unknown error" }));
+//       } else {
+//         errorData = lastError || { error: "All models rate limited" };
+//       }
+      
+//       console.error("Groq API error:", {
+//         status: aiRes?.status,
+//         statusText: aiRes?.statusText,
+//         error: errorData
+//       });
+      
+//       // Handle rate limit errors specifically
+//       const errorMessage = errorData.error?.message || errorData.error || "Failed to get response";
+//       const fullErrorMessage = typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage);
+      
+//       if (fullErrorMessage.includes("Rate limit") || fullErrorMessage.includes("rate limit") || aiRes?.status === 429 || !aiRes) {
+//         // Extract the time remaining if available
+//         const timeMatch = fullErrorMessage.match(/Please try again in ([^.]+)/);
+//         const timeInfo = timeMatch ? ` Please try again in ${timeMatch[1]}.` : "";
+//         return Response.json({ 
+//           error: `Rate limit reached for all available models.${timeInfo} Need more tokens? Upgrade at https://console.groq.com/settings/billing` 
+//         }, { status: 429 });
+//       }
+      
+//       return Response.json({ 
+//         error: `Groq API error: ${fullErrorMessage}` 
+//       }, { status: aiRes?.status || 500 });
+//     }
+
+//     const aiData = await aiRes.json();
+    
+//     // Check if response has the expected structure
+//     if (!aiData?.choices || !Array.isArray(aiData.choices) || aiData.choices.length === 0) {
+//       console.error("Unexpected Groq API response structure:", JSON.stringify(aiData, null, 2));
+//       return Response.json({ 
+//         error: "Unexpected response format from AI service" 
+//       }, { status: 500 });
+//     }
+
+//     const analysis = aiData.choices[0]?.message?.content;
+    
+//     if (!analysis) {
+//       console.error("No content in Groq API response:", JSON.stringify(aiData, null, 2));
+//       return Response.json({ 
+//         error: "AI service returned empty response" 
+//       }, { status: 500 });
+//     }
+
+//     return Response.json({ analysis });
+
+//   } catch (err) {
+//     console.error("Groq Analysis Error:", err);
+//     return Response.json({ error: "Failed to analyze data" }, { status: 500 });
+//   }
+// }
 
 
 // import { generateText } from 'ai'
