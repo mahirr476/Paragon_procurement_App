@@ -54,7 +54,12 @@ export function parseCSV(csvText: string): PurchaseOrder[] {
 
   // Parse headers using the CSV line parser to handle quoted fields correctly
   const headerLine = lines[0]
-  const headers = parseCSVLine(headerLine).map(h => h.trim())
+  const headers = parseCSVLine(headerLine.replace(/^\uFEFF/, '')).map(h => h.trim())
+
+  // Require at least the OLD-format column count (26 columns)
+  if (headers.length < 26) {
+    throw new Error('Missing required columns in CSV header')
+  }
 
   // Detect CSV format by checking for "Weight" and "Pending Wt." columns
   const hasWeightColumn = headers.some(h =>
