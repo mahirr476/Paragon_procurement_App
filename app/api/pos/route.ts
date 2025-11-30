@@ -25,7 +25,17 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { pos } = await req.json()
+    let body: any
+    try {
+      body = await req.json()
+    } catch (error) {
+      return NextResponse.json(
+        { success: false, count: 0, error: "Invalid JSON in request body" },
+        { status: 400 },
+      )
+    }
+
+    const { pos } = body || {}
     console.log("[v0] POST POs - count:", pos?.length)
 
     if (!pos || !Array.isArray(pos) || pos.length === 0) {
@@ -55,7 +65,17 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const { poIds, updates } = await req.json()
+    let body: any
+    try {
+      body = await req.json()
+    } catch (error) {
+      return NextResponse.json(
+        { success: false, error: "Invalid JSON in request body" },
+        { status: 400 },
+      )
+    }
+
+    const { poIds, updates } = body || {}
     console.log("[v0] PUT POs - count:", poIds?.length, "updates:", updates)
 
     if (!poIds || !Array.isArray(poIds) || poIds.length === 0) {

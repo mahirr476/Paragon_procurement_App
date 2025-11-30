@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: procurement_db
     ports:
-      - "5433:5432"
+      - "5430:5432"  # Changed from 5433 due to Windows port reservation
     volumes:
       - postgres_data_dev:/var/lib/postgresql/data
     healthcheck:
@@ -76,7 +76,7 @@ services:
         npx prisma studio --port 5555 --hostname 0.0.0.0
       "
     ports:
-      - "5555:5555"
+      - "555:5555"
     restart: unless-stopped
 
 volumes:
