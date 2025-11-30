@@ -8,8 +8,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Shield, AlertCircle } from "lucide-react"
+import { Shield, AlertCircle, CheckCircle2 } from "lucide-react"
 import { registerUser } from "@/lib/auth"
+import { validatePassword } from "@/lib/utils"
 import Link from "next/link"
 
 export default function RegisterPage() {
@@ -23,6 +24,10 @@ export default function RegisterPage() {
   })
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [passwordValidation, setPasswordValidation] = useState<{ isValid: boolean; errors: string[] }>({
+    isValid: false,
+    errors: [],
+  })
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,8 +49,9 @@ export default function RegisterPage() {
       return
     }
 
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters")
+    const passwordValidationResult = validatePassword(formData.password)
+    if (!passwordValidationResult.isValid) {
+      setError(passwordValidationResult.errors.join(". "))
       setLoading(false)
       return
     }
@@ -138,10 +144,64 @@ export default function RegisterPage() {
                 id="password"
                 type="password"
                 value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, password: e.target.value })
+                  if (e.target.value) {
+                    setPasswordValidation(validatePassword(e.target.value))
+                  } else {
+                    setPasswordValidation({ isValid: false, errors: [] })
+                  }
+                }}
                 placeholder="••••••••"
                 className="bg-input border-border text-foreground mt-1"
               />
+              {formData.password && (
+                <div className="mt-2 space-y-1">
+                  <p className="text-xs text-muted-foreground mb-2">Password must contain:</p>
+                  <div className="space-y-1">
+                    <div className={`flex items-center gap-2 text-xs ${formData.password.length >= 8 ? 'text-green-400' : 'text-muted-foreground'}`}>
+                      {formData.password.length >= 8 ? (
+                        <CheckCircle2 className="w-3 h-3" />
+                      ) : (
+                        <AlertCircle className="w-3 h-3" />
+                      )}
+                      At least 8 characters
+                    </div>
+                    <div className={`flex items-center gap-2 text-xs ${/[A-Z]/.test(formData.password) ? 'text-green-400' : 'text-muted-foreground'}`}>
+                      {/[A-Z]/.test(formData.password) ? (
+                        <CheckCircle2 className="w-3 h-3" />
+                      ) : (
+                        <AlertCircle className="w-3 h-3" />
+                      )}
+                      One uppercase letter
+                    </div>
+                    <div className={`flex items-center gap-2 text-xs ${/[a-z]/.test(formData.password) ? 'text-green-400' : 'text-muted-foreground'}`}>
+                      {/[a-z]/.test(formData.password) ? (
+                        <CheckCircle2 className="w-3 h-3" />
+                      ) : (
+                        <AlertCircle className="w-3 h-3" />
+                      )}
+                      One lowercase letter
+                    </div>
+                    <div className={`flex items-center gap-2 text-xs ${/[0-9]/.test(formData.password) ? 'text-green-400' : 'text-muted-foreground'}`}>
+                      {/[0-9]/.test(formData.password) ? (
+                        <CheckCircle2 className="w-3 h-3" />
+                      ) : (
+                        <AlertCircle className="w-3 h-3" />
+                      )}
+                      One number
+                    </div>
+                    <div className={`flex items-center gap-2 text-xs ${/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? 'text-green-400' : 'text-muted-foreground'}`}>
+                      {/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password) ? (
+                        <CheckCircle2 className="w-3 h-3" />
+                      ) : (
+                        <AlertCircle className="w-3 h-3" />
+                      )}
+                      One special character
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
