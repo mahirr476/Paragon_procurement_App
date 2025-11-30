@@ -56,9 +56,14 @@ export function ChatSidebar() {
     loadSessions()
   }, [userId])
 
+  // Auto-scroll to bottom when messages change or loading state changes
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+    if (messages.length > 0 || isLoading) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+      }, 100)
+    }
+  }, [messages, isLoading])
 
   const handleNewChat = async () => {
     if (!userId) {
@@ -102,6 +107,15 @@ export function ChatSidebar() {
       setMessages(normalizedSession.messages)
       setIsOpen(true)
       setIsMinimized(false)
+      
+      // Auto-scroll to input and focus it after a short delay
+      setTimeout(() => {
+        const inputElement = document.querySelector('[placeholder="Ask about your POs..."]') as HTMLInputElement
+        if (inputElement) {
+          inputElement.focus()
+          inputElement.scrollIntoView({ behavior: "smooth", block: "nearest" })
+        }
+      }, 150)
     } catch (error) {
       console.error("Failed to start new chat session", error)
     }
@@ -113,6 +127,19 @@ export function ChatSidebar() {
       setActiveSessionId(sessionId)
       setMessages(session.messages)
       setIsMinimized(false)
+      
+      // Auto-scroll to bottom when switching sessions
+      setTimeout(() => {
+        if (session.messages.length > 0) {
+          messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+        } else {
+          // Focus input if no messages
+          const inputElement = document.querySelector('[placeholder="Ask about your POs..."]') as HTMLInputElement
+          if (inputElement) {
+            inputElement.focus()
+          }
+        }
+      }, 100)
     }
   }
 
@@ -252,6 +279,11 @@ export function ChatSidebar() {
 
       currentSession.messages = finalMessages
       currentSession.updatedAt = new Date()
+      
+      // Auto-scroll to latest message
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+      }, 100)
       // Persist assistant message and updated session metadata
       try {
         const assistantMsgResponse = await fetch("/api/chat/messages", {
@@ -434,7 +466,7 @@ export function ChatSidebar() {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
             {messages.length === 0 ? (
               <div className="h-full flex items-center justify-center">
                 <div className="text-center space-y-4 p-4">
@@ -460,31 +492,31 @@ export function ChatSidebar() {
                 </div>
               </div>
             ) : (
-              messages.map((msg) => (
-                <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                  <div
-                    className={`max-w-[80%] px-3 py-2 rounded-xl text-sm ${
-                      msg.role === "user"
-                        ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white"
-                        : "bg-neutral-900 border border-neutral-800 text-neutral-100"
-                    }`}
-                  >
-                    <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+              <>
+                {messages.map((msg) => (
+                  <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                    <div
+                      className={`max-w-[85%] px-3 py-2.5 rounded-2xl text-sm ${
+                        msg.role === "user"
+                          ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-br-sm"
+                          : "bg-neutral-900 border border-neutral-800 text-neutral-100 rounded-bl-sm"
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                    </div>
                   </div>
-                </div>
-              ))
+                ))}
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-2xl rounded-bl-sm px-3 py-2.5 flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 text-orange-500 animate-spin" />
+                      <span className="text-xs text-neutral-300">Analyzing...</span>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </>
             )}
-
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2 flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 text-orange-500 animate-spin" />
-                  <span className="text-xs text-neutral-300">Analyzing...</span>
-                </div>
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
           </div>
 
           {/* Input */}
@@ -501,15 +533,15 @@ export function ChatSidebar() {
                 }}
                 placeholder="Ask about your POs..."
                 disabled={isLoading}
-                className="bg-neutral-900 border-neutral-700 focus:border-orange-500 text-white placeholder-neutral-500 text-sm h-10 rounded-xl"
+                className="bg-neutral-900 border-neutral-700 focus:border-orange-500 text-white placeholder-neutral-500 text-sm h-11 rounded-xl"
               />
               <Button
                 onClick={handleSend}
                 disabled={isLoading || !input.trim()}
-                className="bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white h-10 w-10 rounded-xl flex-shrink-0"
+                className="bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white h-11 w-11 rounded-xl flex-shrink-0"
                 size="icon"
               >
-                <Send className="w-4 h-4" />
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </Button>
             </div>
           </div>
