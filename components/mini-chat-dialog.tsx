@@ -54,9 +54,38 @@ export function MiniChatDialog({ onClose }: MiniChatDialogProps) {
         }),
       })
 
-      if (!response.ok) throw new Error("Analysis failed")
-
       const data = await response.json()
+
+      if (!response.ok) {
+        // Extract the full error message, especially for rate limits and API key errors
+        let errorMessage = data.error || "Analysis failed. Please try again."
+        
+        // If it's an API key error, format it nicely
+        if (response.status === 401 || errorMessage.includes("Invalid API Key") || errorMessage.includes("invalid api key")) {
+          errorMessage = `🔑 Invalid API Key. Please set GROQ_API_KEY in your .env.local file.\n\nGet your API key at: https://console.groq.com/keys\n\nAfter adding the key, restart your development server.`
+        }
+        // If it's a "request too large" error, format it nicely
+        else if (response.status === 413 || errorMessage.includes("too large") || errorMessage.includes("Request too large") || errorMessage.includes("TPM")) {
+          errorMessage = `📊 Request too large. The data is too extensive for the current model.\n\nTry asking a more specific question, or upgrade your Groq account at https://console.groq.com/settings/billing`
+        }
+        // If it's a rate limit error, format it nicely
+        else if (response.status === 429 || errorMessage.includes("Rate limit") || errorMessage.includes("rate limit")) {
+          // Extract the "Please try again in X" part if it exists
+          const timeMatch = errorMessage.match(/Please try again in ([^.]+)/)
+          if (timeMatch) {
+            errorMessage = `⚠️ Rate limit reached. Please try again in ${timeMatch[1]}. Need more tokens? Upgrade at https://console.groq.com/settings/billing`
+          } else {
+            errorMessage = `⚠️ Rate limit reached. ${errorMessage}`
+          }
+        }
+        
+        throw new Error(errorMessage)
+      }
+
+      if (!data.analysis) {
+        throw new Error(data.error || "No response from AI service. Please check your API configuration.")
+      }
+
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
@@ -66,10 +95,25 @@ export function MiniChatDialog({ onClose }: MiniChatDialogProps) {
 
       setMessages((prev) => [...prev, assistantMessage])
     } catch (err) {
+      let errorText = err instanceof Error ? err.message : "Sorry, I encountered an error analyzing your request."
+      
+      // Provide helpful message for API key errors
+      if (errorText.includes("Invalid API Key") || errorText.includes("invalid api key") || errorText.includes("API key not configured")) {
+        errorText = `🔑 ${errorText}`
+      }
+      // Provide helpful message for "request too large" errors
+      else if (errorText.includes("too large") || errorText.includes("Request too large") || errorText.includes("TPM")) {
+        errorText = `📊 ${errorText}`
+      }
+      // Provide helpful message for rate limits
+      else if (errorText.includes("Rate limit") || errorText.includes("rate limit")) {
+        errorText = `⚠️ Rate limit reached. ${errorText.includes("Please try again in") ? errorText : "Please try again later or upgrade your Groq account at https://console.groq.com/settings/billing"}`
+      }
+      
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "Sorry, I encountered an error analyzing your request.",
+        content: errorText,
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, errorMessage])

@@ -15,30 +15,37 @@ export async function POST(request: Request) {
     const approvedPOs = approvedJson.pos ?? [];
     const currentPOs = currentJson.pos ?? [];
 
-    const poContext = {
-      summary: {
-        totalCurrentPOs: currentPOs.length,
-        totalApprovedPOs: approvedPOs.length,
-        totalCurrentAmount: currentPOs.reduce((s, p) => s + (p.totalAmount ?? 0), 0),
-        totalApprovedAmount: approvedPOs.reduce((s, p) => s + (p.totalAmount ?? 0), 0),
-        uniqueSuppliers: new Set([...currentPOs, ...approvedPOs].map(p => p.supplier)).size,
-      },
-      currentPOs: currentPOs.slice(0, 20),
-      approvedPOs: approvedPOs.slice(0, 20)
+    // Calculate summary
+    const summary = {
+      totalCurrentPOs: currentPOs.length,
+      totalApprovedPOs: approvedPOs.length,
+      totalCurrentAmount: currentPOs.reduce((s, p) => s + (p.totalAmount ?? 0), 0),
+      totalApprovedAmount: approvedPOs.reduce((s, p) => s + (p.totalAmount ?? 0), 0),
+      uniqueSuppliers: new Set([...currentPOs, ...approvedPOs].map(p => p.supplier)).size,
     };
 
-    const prompt = `
-You are a procurement analyst. Answer this question: "${query}"
+    // Reduce data size: only send essential fields and limit count
+    const getEssentialFields = (po: any) => ({
+      supplier: po.supplier,
+      item: po.item,
+      qty: po.maxQty || po.qty,
+      rate: po.rate,
+      totalAmount: po.totalAmount,
+      ...(po.lastApprovedRate && { lastApprovedRate: po.lastApprovedRate }),
+      ...(po.status && { status: po.status }),
+    });
 
-SUMMARY:
-${JSON.stringify(poContext.summary, null, 2)}
+    // Limit to 10 POs each to reduce token usage
+    const currentPOsSample = currentPOs.slice(0, 10).map(getEssentialFields);
+    const approvedPOsSample = approvedPOs.slice(0, 10).map(getEssentialFields);
 
-CURRENT POs:
-${JSON.stringify(poContext.currentPOs, null, 2)}
+    // Create a more compact prompt
+    const prompt = `You are a procurement analyst. Answer: "${query}"
 
-APPROVED POs:
-${JSON.stringify(poContext.approvedPOs, null, 2)}
-`;
+Summary: ${summary.totalCurrentPOs} current POs (₹${summary.totalCurrentAmount.toLocaleString()}), ${summary.totalApprovedPOs} approved (₹${summary.totalApprovedAmount.toLocaleString()}), ${summary.uniqueSuppliers} suppliers.
+
+Current POs (sample): ${JSON.stringify(currentPOsSample)}
+Approved POs (sample): ${JSON.stringify(approvedPOsSample)}`;
 
     // Check if API key is set
     if (!process.env.GROQ_API_KEY) {
@@ -51,11 +58,12 @@ ${JSON.stringify(poContext.approvedPOs, null, 2)}
 
     console.log("GROQ_API_KEY is configured");
 
-    // Try models in order of preference (fallback if rate limited)
+    // Try models in order of preference (higher token limits first)
+    // llama-3.3-70b-versatile has higher TPM limits than llama-3.1-8b-instant
     const models = [
-      "llama-3.3-70b-versatile",
-      "llama-3.1-8b-instant", // Smaller, faster model as fallback
-      "mixtral-8x7b-32768"
+      "llama-3.3-70b-versatile", // Higher token limit
+      "mixtral-8x7b-32768", // Also has good token limits
+      "llama-3.1-8b-instant" // Lower token limit, use as last resort
     ];
 
     let aiRes;
@@ -87,18 +95,46 @@ ${JSON.stringify(poContext.approvedPOs, null, 2)}
           break;
         }
 
-        // If rate limited, try next model
+        // If rate limited or request too large, try next model
         if (aiRes.status === 429) {
-          const errorData = await aiRes.json().catch(() => ({}));
+          let errorData: any = {};
+          try {
+            errorData = await aiRes.json();
+          } catch (e) {
+            const text = await aiRes.text().catch(() => "");
+            errorData = { error: text || "Rate limit reached" };
+          }
+          const errorMsg = errorData.error?.message || errorData.error || errorData.message || "Rate limit reached";
           lastError = {
-            error: errorData.error?.message || errorData.error || "Rate limit reached",
+            error: errorMsg,
             status: 429
           };
           console.log(`Model ${model} rate limited, trying next model...`);
           continue;
         }
 
+        // If request too large, try next model with higher limits
+        if (aiRes.status === 400 || aiRes.status === 413) {
+          let errorData: any = {};
+          try {
+            errorData = await aiRes.json();
+          } catch (e) {
+            const text = await aiRes.text().catch(() => "");
+            errorData = { error: text || "Request too large" };
+          }
+          const errorMsg = errorData.error?.message || errorData.error || errorData.message || "Request too large";
+          if (errorMsg.includes("too large") || errorMsg.includes("Request too large") || errorMsg.includes("TPM") || errorMsg.includes("tokens per minute")) {
+            lastError = {
+              error: errorMsg,
+              status: aiRes.status
+            };
+            console.log(`Model ${model} request too large, trying next model with higher limits...`);
+            continue;
+          }
+        }
+
         // For other errors, break and handle
+        console.log(`Model ${model} failed with status ${aiRes.status}, stopping model iteration`);
         break;
       } catch (err) {
         console.error(`Error with model ${model}:`, err);
@@ -108,22 +144,79 @@ ${JSON.stringify(poContext.approvedPOs, null, 2)}
     }
 
     if (!aiRes || !aiRes.ok) {
-      let errorData;
+      let errorData: any = {};
+      let errorText = "";
+      
       if (aiRes) {
-        errorData = await aiRes.json().catch(() => ({ error: "Unknown error" }));
+        try {
+          // Try to parse as JSON first
+          errorData = await aiRes.json();
+        } catch (jsonError) {
+          // If JSON parsing fails, try to get text response
+          try {
+            errorText = await aiRes.text();
+            console.error("Groq API returned non-JSON error:", errorText);
+            // Try to extract error from text
+            errorData = { error: errorText || "Unknown error" };
+          } catch (textError) {
+            console.error("Failed to read error response:", textError);
+            errorData = { error: `HTTP ${aiRes.status}: ${aiRes.statusText || "Unknown error"}` };
+          }
+        }
       } else {
-        errorData = lastError || { error: "All models rate limited" };
+        errorData = lastError || { error: "All models failed" };
       }
       
       console.error("Groq API error:", {
         status: aiRes?.status,
         statusText: aiRes?.statusText,
-        error: errorData
+        error: errorData,
+        errorText: errorText
       });
       
-      // Handle rate limit errors specifically
-      const errorMessage = errorData.error?.message || errorData.error || "Failed to get response";
+      // Extract error message from various possible structures
+      let errorMessage = "";
+      if (errorData?.error) {
+        if (typeof errorData.error === 'string') {
+          errorMessage = errorData.error;
+        } else if (errorData.error?.message) {
+          errorMessage = errorData.error.message;
+        } else if (errorData.error?.error?.message) {
+          errorMessage = errorData.error.error.message;
+        } else {
+          errorMessage = JSON.stringify(errorData.error);
+        }
+      } else if (errorData?.message) {
+        errorMessage = errorData.message;
+      } else if (errorText) {
+        errorMessage = errorText;
+      } else {
+        errorMessage = errorData?.error || `HTTP ${aiRes?.status || 500}: ${aiRes?.statusText || "Unknown error"}`;
+      }
+      
       const fullErrorMessage = typeof errorMessage === 'string' ? errorMessage : JSON.stringify(errorMessage);
+      
+      // Handle invalid API key errors specifically
+      if (aiRes?.status === 401 || 
+          fullErrorMessage.includes("Invalid API Key") || 
+          fullErrorMessage.includes("invalid api key") ||
+          fullErrorMessage.includes("authentication") ||
+          fullErrorMessage.includes("Unauthorized")) {
+        return Response.json({ 
+          error: "Invalid API Key. Please check your GROQ_API_KEY in your .env.local file. Get your API key at https://console.groq.com/keys" 
+        }, { status: 401 });
+      }
+      
+      // Handle "Request too large" / TPM limit errors
+      if (fullErrorMessage.includes("too large") || 
+          fullErrorMessage.includes("Request too large") || 
+          fullErrorMessage.includes("TPM") ||
+          fullErrorMessage.includes("tokens per minute") ||
+          aiRes?.status === 413) {
+        return Response.json({ 
+          error: `Request too large for available models. The data is too extensive. Please try a more specific question or upgrade your Groq account at https://console.groq.com/settings/billing` 
+        }, { status: 413 });
+      }
       
       if (fullErrorMessage.includes("Rate limit") || fullErrorMessage.includes("rate limit") || aiRes?.status === 429 || !aiRes) {
         // Extract the time remaining if available
@@ -134,9 +227,13 @@ ${JSON.stringify(poContext.approvedPOs, null, 2)}
         }, { status: 429 });
       }
       
+      // For unknown errors, provide more context
+      const statusCode = aiRes?.status || 500;
+      const statusMessage = aiRes?.statusText || "Internal Server Error";
+      
       return Response.json({ 
-        error: `Groq API error: ${fullErrorMessage}` 
-      }, { status: aiRes?.status || 500 });
+        error: fullErrorMessage || `Groq API error (${statusCode}): ${statusMessage}. Please check the console for more details.` 
+      }, { status: statusCode });
     }
 
     const aiData = await aiRes.json();
@@ -162,7 +259,20 @@ ${JSON.stringify(poContext.approvedPOs, null, 2)}
 
   } catch (err) {
     console.error("Groq Analysis Error:", err);
-    return Response.json({ error: "Failed to analyze data" }, { status: 500 });
+    
+    // Extract meaningful error message
+    let errorMessage = "Failed to analyze data";
+    if (err instanceof Error) {
+      errorMessage = err.message;
+    } else if (typeof err === 'string') {
+      errorMessage = err;
+    } else if (err && typeof err === 'object' && 'message' in err) {
+      errorMessage = String((err as any).message);
+    }
+    
+    return Response.json({ 
+      error: errorMessage || "An unexpected error occurred while analyzing your request. Please try again." 
+    }, { status: 500 });
   }
 }
 
