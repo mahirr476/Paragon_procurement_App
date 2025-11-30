@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     // Create a more compact prompt
     const prompt = `You are a procurement analyst. Answer: "${query}"
 
-Summary: ${summary.totalCurrentPOs} current POs (₹${summary.totalCurrentAmount.toLocaleString()}), ${summary.totalApprovedPOs} approved (₹${summary.totalApprovedAmount.toLocaleString()}), ${summary.uniqueSuppliers} suppliers.
+Summary: ${summary.totalCurrentPOs} current POs (৳${summary.totalCurrentAmount.toLocaleString()}), ${summary.totalApprovedPOs} approved (৳${summary.totalApprovedAmount.toLocaleString()}), ${summary.uniqueSuppliers} suppliers.
 
 Current POs (sample): ${JSON.stringify(currentPOsSample)}
 Approved POs (sample): ${JSON.stringify(approvedPOsSample)}`;
@@ -530,8 +530,8 @@ async function tryGroq(prompt: string): Promise<string | null> {
 
 // PO Data Summary:
 // - Current POs to Approve: ${poContext.summary.totalCurrentPOs}
-// - Current Total Amount: ₹${poContext.summary.totalCurrentAmount.toLocaleString()}
-// - Total Approved Amount: ₹${poContext.summary.totalApprovedAmount.toLocaleString()}
+// - Current Total Amount: ৳${poContext.summary.totalCurrentAmount.toLocaleString()}
+// - Total Approved Amount: ৳${poContext.summary.totalApprovedAmount.toLocaleString()}
 // - Unique Suppliers: ${poContext.summary.uniqueSuppliers}
 
 // Current POs Details:
