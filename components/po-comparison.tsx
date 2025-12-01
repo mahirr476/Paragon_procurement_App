@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { AlertTriangle, CheckCircle, Trash2, Building2, PackageOpen } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { AlertTriangle, CheckCircle, Trash2, Building2, PackageOpen, Filter, RotateCcw } from "lucide-react"
 import type { PurchaseOrder, AnalysisResult } from "@/lib/types"
 import { analyzeOrders } from "@/lib/analysis"
 import { AnalysisDetailPanel } from "./analysis-detail-panel"
@@ -31,6 +32,11 @@ export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onD
   const [selectedBranch, setSelectedBranch] = useState<string>("all")
   const [selectedPOIds, setSelectedPOIds] = useState<Set<string>>(new Set())
 
+  // Additional filter states
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filterRequisitionType, setFilterRequisitionType] = useState<string>("all")
+  const [filterDeliveryType, setFilterDeliveryType] = useState<string>("all")
+
   const branches = useMemo(() => {
     if (!Array.isArray(currentPOs)) return []
     const branchSet = new Set(currentPOs.map((po) => po.branch).filter(Boolean))
@@ -39,19 +45,42 @@ export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onD
 
   const filteredPOs = useMemo(() => {
     if (!Array.isArray(currentPOs)) return []
-    if (selectedBranch === "all") return currentPOs
-    return currentPOs.filter((po) => po.branch === selectedBranch)
-  }, [currentPOs, selectedBranch])
+
+    return currentPOs.filter((po) => {
+      // Search filter
+      const searchLower = searchTerm.toLowerCase()
+      const matchesSearch =
+        searchTerm === "" ||
+        po.orderNo.toLowerCase().includes(searchLower) ||
+        po.supplier.toLowerCase().includes(searchLower) ||
+        po.item.toLowerCase().includes(searchLower) ||
+        (po.refNo && po.refNo.toLowerCase().includes(searchLower))
+
+      // Branch filter
+      const matchesBranch = selectedBranch === "all" || po.branch === selectedBranch
+
+      // Requisition type filter
+      const matchesRequisitionType =
+        filterRequisitionType === "all" || po.requisitionType === filterRequisitionType
+
+      // Delivery type filter
+      const matchesDeliveryType =
+        filterDeliveryType === "all" || po.deliveryType === filterDeliveryType
+
+      return matchesSearch && matchesBranch && matchesRequisitionType && matchesDeliveryType
+    })
+  }, [currentPOs, searchTerm, selectedBranch, filterRequisitionType, filterDeliveryType])
 
   const groupedPOs = useMemo(() => {
     const groups = new Map<string, POGroup>()
 
     filteredPOs.forEach((po) => {
-      const key = `${po.supplier}-${po.totalAmount}`
+      const key = po.supplier
 
       if (groups.has(key)) {
         const group = groups.get(key)!
         group.pos.push(po)
+        group.totalAmount += po.totalAmount
       } else {
         groups.set(key, {
           id: key,
@@ -133,6 +162,19 @@ export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onD
       setSelectedPOIds(new Set())
     }
   }
+
+  const handleClearFilters = () => {
+    setSearchTerm("")
+    setSelectedBranch("all")
+    setFilterRequisitionType("all")
+    setFilterDeliveryType("all")
+  }
+
+  const hasActiveFilters =
+    searchTerm !== "" ||
+    selectedBranch !== "all" ||
+    filterRequisitionType !== "all" ||
+    filterDeliveryType !== "all"
 
   const selectedPOIssues = selectedPO ? poIssuesMap.get(selectedPO.id) || [] : []
 
@@ -247,7 +289,89 @@ export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onD
             </div>
           )}
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* Minimal Filter Bar */}
+          <div className="flex items-center gap-2 px-3 py-2 bg-neutral-800/50 rounded-lg border border-neutral-700/50">
+            <Filter className="w-3.5 h-3.5 text-neutral-500" />
+
+            {/* Search */}
+            <Input
+              placeholder="Search orders, suppliers, items..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-7 text-xs flex-1 max-w-xs bg-neutral-900 border-neutral-700 text-white placeholder:text-neutral-500"
+            />
+
+            {/* Branch Filter */}
+            {branches.length > 0 && (
+              <Select value={selectedBranch} onValueChange={setSelectedBranch}>
+                <SelectTrigger className="h-7 text-xs w-32 bg-neutral-900 border-neutral-700 text-white">
+                  <SelectValue placeholder="All Branches" />
+                </SelectTrigger>
+                <SelectContent className="bg-neutral-800 border-neutral-700">
+                  <SelectItem value="all" className="text-xs text-white hover:bg-neutral-700">
+                    All Branches
+                  </SelectItem>
+                  {branches.map((branch) => (
+                    <SelectItem key={branch} value={branch} className="text-xs text-white hover:bg-neutral-700">
+                      {branch}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {/* Requisition Type Filter */}
+            <Select value={filterRequisitionType} onValueChange={setFilterRequisitionType}>
+              <SelectTrigger className="h-7 text-xs w-28 bg-neutral-900 border-neutral-700 text-white">
+                <SelectValue placeholder="All Types" />
+              </SelectTrigger>
+              <SelectContent className="bg-neutral-800 border-neutral-700">
+                <SelectItem value="all" className="text-xs text-white hover:bg-neutral-700">
+                  All Types
+                </SelectItem>
+                <SelectItem value="Standard" className="text-xs text-white hover:bg-neutral-700">
+                  Standard
+                </SelectItem>
+                <SelectItem value="Urgent" className="text-xs text-white hover:bg-neutral-700">
+                  Urgent
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Delivery Type Filter */}
+            <Select value={filterDeliveryType} onValueChange={setFilterDeliveryType}>
+              <SelectTrigger className="h-7 text-xs w-28 bg-neutral-900 border-neutral-700 text-white">
+                <SelectValue placeholder="Delivery" />
+              </SelectTrigger>
+              <SelectContent className="bg-neutral-800 border-neutral-700">
+                <SelectItem value="all" className="text-xs text-white hover:bg-neutral-700">
+                  All Delivery
+                </SelectItem>
+                <SelectItem value="Standard" className="text-xs text-white hover:bg-neutral-700">
+                  Standard
+                </SelectItem>
+                <SelectItem value="Express" className="text-xs text-white hover:bg-neutral-700">
+                  Express
+                </SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Clear Filters */}
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFilters}
+                className="h-7 text-xs px-2 text-neutral-400 hover:text-white"
+              >
+                <RotateCcw className="w-3 h-3 mr-1" />
+                Clear
+              </Button>
+            )}
+          </div>
+
+          {/* PO List */}
           <div className="space-y-3 max-h-[600px] overflow-y-auto" data-tour="upload-po-list">
             {groupedPOs.map((group) => {
               const groupIssues = getGroupIssues(group)
