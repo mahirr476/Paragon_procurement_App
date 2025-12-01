@@ -8,7 +8,7 @@ import { CSVUploader } from "@/components/csv-uploader"
 import { POComparison } from "@/components/po-comparison"
 import { DashboardStats } from "@/components/dashboard-stats"
 import { DatabaseManager } from "@/components/database-manager"
-import { ApprovalList } from "@/components/approval-list"
+import { ApprovalComparison } from "@/components/approval-comparison"
 import { PurchaseOrder } from "@/lib/types"
 import type { PoloxyDatabase, PoloxyApprovalRequest } from "@/lib/poloxy-types"
 import { mockDatabases, fetchMockApprovals } from "@/lib/poloxy-mock-data"
@@ -136,8 +136,13 @@ export default function UploadPage() {
   }
 
   // CSV Upload handlers
-  const handleUploadSuccess = async (count: number) => {
+  const handleUploadSuccess = async (count: number, databaseId?: string) => {
     setUploadCount(count)
+
+    // If a database was selected, you could tag the uploaded POs here
+    if (databaseId) {
+      console.log('[Upload Page] CSV uploaded with database:', databaseId)
+    }
     
     // Reload current POs after upload
     try {
@@ -341,7 +346,11 @@ export default function UploadPage() {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Upload Section */}
             <div className="lg:col-span-1 space-y-4">
-              <CSVUploader onUploadSuccess={handleUploadSuccess} />
+              <CSVUploader
+                onUploadSuccess={handleUploadSuccess}
+                databases={databases}
+                onAddDatabase={handleAddDatabase}
+              />
 
               {approvedPOs.length > 0 && (
                 <Card className="bg-card border-border">
@@ -464,11 +473,12 @@ export default function UploadPage() {
               )}
             </div>
 
-            {/* Approval List */}
+            {/* Approval Comparison */}
             <div className="lg:col-span-3">
-              <ApprovalList
+              <ApprovalComparison
                 approvals={approvals}
                 databases={databases}
+                approvedPOs={approvedPOs}
                 onApprove={handleApprove}
                 onReject={handleReject}
                 onDelete={handleDeleteApproval}
