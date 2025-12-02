@@ -1,3 +1,5 @@
+import Anthropic from '@anthropic-ai/sdk';
+
 export async function POST(request: Request) {
   try {
     const { query } = await request.json();
@@ -51,8 +53,14 @@ Summary: ${summary.totalCurrentPOs} current POs (৳${summary.totalCurrentAmount
 Current POs (sample): ${JSON.stringify(currentPOsSample)}
 Approved POs (sample): ${JSON.stringify(approvedPOsSample)}`;
 
-    // Try Gemini first (FREE & FAST)
-    let analysis = await tryGemini(prompt);
+    // Try Claude first (PRIMARY - Best Quality)
+    let analysis = await tryClaude(prompt);
+    
+    // If Claude fails, fallback to Gemini
+    if (!analysis) {
+      console.log("⚠️ Claude failed, trying Gemini fallback...");
+      analysis = await tryGemini(prompt);
+    }
     
     // If Gemini fails, fallback to Groq
     if (!analysis) {
@@ -73,6 +81,71 @@ Approved POs (sample): ${JSON.stringify(approvedPOsSample)}`;
     return Response.json({ 
       error: "Failed to analyze data" 
     }, { status: 500 });
+  }
+}
+
+// Try Claude API (Primary - Best Quality)
+async function tryClaude(prompt: string): Promise<string | null> {
+  try {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.log("⚠️ ANTHROPIC_API_KEY not configured");
+      return null;
+    }
+
+    console.log("🟣 Trying CLAUDE...");
+    
+    const anthropic = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    });
+
+    // Try multiple Claude models in order of preference
+    // Haiku first since it's confirmed working and fastest
+    const models = [
+      "claude-3-haiku-20240307",     // Haiku model (fastest, most available - confirmed working)
+      "claude-3-5-sonnet-20240620",  // Latest stable 3.5 Sonnet
+      "claude-3-sonnet-20240229",    // Stable 3.0 Sonnet (more widely available)
+      "claude-3-opus-20240229",      // Opus model (if available)
+    ];
+
+    for (const model of models) {
+      try {
+        console.log(`  → Trying model: ${model}`);
+        
+        const message = await anthropic.messages.create({
+          model: model,
+          max_tokens: 1000,
+          temperature: 0.7,
+          messages: [
+            {
+              role: "user",
+              content: `You are a procurement analytics expert. Provide concise, actionable insights.\n\n${prompt}`,
+            },
+          ],
+        });
+
+        const analysis = message.content[0].type === 'text' ? message.content[0].text : null;
+        
+        if (analysis) {
+          console.log(`✅ Claude succeeded with ${model}`);
+          return analysis;
+        }
+      } catch (modelErr: any) {
+        // If model not found, try next one
+        if (modelErr?.error?.type === 'not_found_error') {
+          console.log(`  ⚠️ Model ${model} not available, trying next...`);
+          continue;
+        }
+        // For other errors, log and try next model
+        console.log(`  ⚠️ Model ${model} failed: ${modelErr?.error?.message || modelErr?.message || 'Unknown error'}, trying next...`);
+        continue;
+      }
+    }
+    
+    console.log("❌ All Claude models failed");
+    return null;
+  } catch (err: any) {
+    console.error("❌ Claude exception:", err.message || err);
+    return null;
   }
 }
 

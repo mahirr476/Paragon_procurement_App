@@ -62,18 +62,18 @@ export function MiniChatDialog({ onClose }: MiniChatDialogProps) {
         
         // If it's an API key error, format it nicely
         if (response.status === 401 || errorMessage.includes("Invalid API Key") || errorMessage.includes("invalid api key")) {
-          errorMessage = `🔑 Invalid API Key. Please set GROQ_API_KEY in your .env.local file.\n\nGet your API key at: https://console.groq.com/keys\n\nAfter adding the key, restart your development server.`
+          errorMessage = `🔑 Invalid API Key. Please set ANTHROPIC_API_KEY (Claude) in your .env.local file.\n\nGet your Claude API key at: https://console.anthropic.com/\n\nAfter adding the key, restart your development server.`
         }
         // If it's a "request too large" error, format it nicely
         else if (response.status === 413 || errorMessage.includes("too large") || errorMessage.includes("Request too large") || errorMessage.includes("TPM")) {
-          errorMessage = `📊 Request too large. The data is too extensive for the current model.\n\nTry asking a more specific question, or upgrade your Groq account at https://console.groq.com/settings/billing`
+          errorMessage = `📊 Request too large. The data is too extensive for the current model.\n\nTry asking a more specific question, or check your API limits.`
         }
         // If it's a rate limit error, format it nicely
         else if (response.status === 429 || errorMessage.includes("Rate limit") || errorMessage.includes("rate limit")) {
           // Extract the "Please try again in X" part if it exists
           const timeMatch = errorMessage.match(/Please try again in ([^.]+)/)
           if (timeMatch) {
-            errorMessage = `⚠️ Rate limit reached. Please try again in ${timeMatch[1]}. Need more tokens? Upgrade at https://console.groq.com/settings/billing`
+            errorMessage = `⚠️ Rate limit reached. Please try again in ${timeMatch[1]}.`
           } else {
             errorMessage = `⚠️ Rate limit reached. ${errorMessage}`
           }
