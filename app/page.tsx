@@ -14,15 +14,29 @@ import ReportsPage from "./reports/page"
 import { getApprovedPOs } from "@/lib/storage"
 import { getCurrentUser } from "@/lib/auth"
 import type { User } from "@/lib/types"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { InteractiveTour } from "@/components/interactive-tour"
 import { SkipTutorialsDialog } from "@/components/skip-tutorials-dialog"
 
 export const dynamic = "force-dynamic"
 
+const VALID_SECTIONS = ["overview", "upload", "reports", "intelligence", "systems"]
+
 export default function TacticalDashboard() {
   const router = useRouter()
-  const [activeSection, setActiveSection] = useState("overview")
+  const searchParams = useSearchParams()
+  
+  // Initialize activeSection from URL or default to "overview"
+  const getInitialSection = () => {
+    try {
+      const section = searchParams.get("section")
+      return section && VALID_SECTIONS.includes(section) ? section : "overview"
+    } catch {
+      return "overview"
+    }
+  }
+  
+  const [activeSection, setActiveSection] = useState(getInitialSection)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [approvedPOs, setApprovedPOs] = useState<any[]>([])
   const [currentUser, setCurrentUser] = useState<User | null>(null)
@@ -30,6 +44,32 @@ export default function TacticalDashboard() {
   const [activeTutorial, setActiveTutorial] = useState<string | null>(null)
   const [tutorialsEnabled, setTutorialsEnabled] = useState(false)
   const [completedTutorials, setCompletedTutorials] = useState<Set<string>>(new Set())
+
+  // Sync activeSection with URL on mount (only once)
+  useEffect(() => {
+    const section = searchParams.get("section")
+    const validSection = section && VALID_SECTIONS.includes(section) ? section : "overview"
+    if (validSection !== activeSection) {
+      setActiveSection(validSection)
+    }
+    // Only run on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Update URL when activeSection changes (but avoid if URL already matches)
+  useEffect(() => {
+    const currentSection = searchParams.get("section")
+    const expectedSection = activeSection === "overview" ? null : activeSection
+    
+    // Only update URL if it doesn't match
+    if (currentSection !== expectedSection) {
+      const newUrl = activeSection === "overview" 
+        ? "/" 
+        : `/?section=${activeSection}`
+      router.replace(newUrl, { scroll: false })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSection])
 
   // Check authentication
   useEffect(() => {

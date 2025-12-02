@@ -183,7 +183,7 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
       <div className="bg-card/50 border border-border rounded-lg p-4" data-tour="dashboard-filters">
         <div className="flex flex-wrap items-center gap-3">
           {/* Search */}
-          <div className="relative flex-1 min-w-[200px]">
+          <div className="relative w-[300px] mr-8">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search items, suppliers, PO#..."
@@ -195,8 +195,10 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
 
           {/* Branch Filter */}
           <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-            <SelectTrigger className="w-[140px] bg-muted/50 border-border text-foreground h-9">
-              <SelectValue placeholder="Branch" />
+            <SelectTrigger className="w-[160px] bg-muted/50 border-border text-foreground h-9">
+              <SelectValue>
+                {selectedBranch === "all" ? "All Branches" : selectedBranch}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
               <SelectItem value="all">All Branches</SelectItem>
@@ -208,8 +210,10 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
 
           {/* Supplier Filter */}
           <Select value={selectedSupplier} onValueChange={setSelectedSupplier}>
-            <SelectTrigger className="w-[140px] bg-muted/50 border-border text-foreground h-9">
-              <SelectValue placeholder="Supplier" />
+            <SelectTrigger className="w-[160px] bg-muted/50 border-border text-foreground h-9">
+              <SelectValue>
+                {selectedSupplier === "all" ? "All Suppliers" : selectedSupplier}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
               <SelectItem value="all">All Suppliers</SelectItem>
@@ -221,8 +225,10 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
 
           {/* Category Filter */}
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-[140px] bg-muted/50 border-border text-foreground h-9">
-              <SelectValue placeholder="Category" />
+            <SelectTrigger className="w-[160px] bg-muted/50 border-border text-foreground h-9">
+              <SelectValue>
+                {selectedCategory === "all" ? "All Categories" : selectedCategory}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
               <SelectItem value="all">All Categories</SelectItem>
@@ -232,24 +238,30 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
             </SelectContent>
           </Select>
 
-          {/* Clear Filters Button - only show when filters are active */}
-          {hasActiveFilters && (
-            <Button 
-              onClick={clearFilters}
-              size="sm"
-              variant="ghost"
-              className="text-accent hover:bg-accent/10 hover:text-accent h-9"
-            >
-              <X className="w-4 h-4 mr-1" />
-              Clear
-            </Button>
-          )}
+          {/* Spacer for gap */}
+          <div className="flex-1"></div>
           
-          {/* Filtered Count Badge */}
-          <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="bg-accent/20 text-accent px-3 py-1 rounded-full font-mono">
-              {filteredPOs.length} / {approvedPOs.length}
-            </span>
+          {/* Right side buttons */}
+          <div className="flex items-center gap-2">
+            {/* Clear Filters Button - only show when filters are active */}
+            {hasActiveFilters && (
+              <Button 
+                onClick={clearFilters}
+                size="sm"
+                variant="ghost"
+                className="text-accent hover:bg-accent/10 hover:text-accent h-9"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Clear
+              </Button>
+            )}
+            
+            {/* Filtered Count Badge */}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="bg-accent/20 text-accent px-3 py-1 rounded-full font-mono">
+                {filteredPOs.length} / {approvedPOs.length}
+              </span>
+            </div>
           </div>
         </div>
       </div>

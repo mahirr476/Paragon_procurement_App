@@ -349,7 +349,7 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0 pr-2">
                 <p className="text-muted-foreground text-xs mb-1">Total Spend</p>
-                <p className="text-xl font-bold text-foreground truncate">₹{(totalSpend / 100000).toFixed(2)}L</p>
+                <p className="text-xl font-bold text-foreground truncate">৳{(totalSpend / 100000).toFixed(2)}L</p>
               </div>
               <DollarSign className="w-8 h-8 text-accent flex-shrink-0" />
             </div>
@@ -369,7 +369,7 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0 pr-2">
                 <p className="text-muted-foreground text-xs mb-1">Avg PO Value</p>
-                <p className="text-xl font-bold text-foreground truncate">₹{(avgPOValue.current / 1000).toFixed(1)}K</p>
+                <p className="text-xl font-bold text-foreground truncate">৳{(avgPOValue.current / 1000).toFixed(1)}K</p>
                 <p className={`text-xs ${avgPOValue.trend >= 0 ? "text-green-500" : "text-red-500"}`}>
                   {avgPOValue.trend >= 0 ? "+" : ""}
                   {avgPOValue.trend.toFixed(1)}%
@@ -408,7 +408,7 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0 pr-2">
                 <p className="text-muted-foreground text-xs mb-1">Avg Monthly Spending</p>
-                <p className="text-xl font-bold text-foreground">₹{(avgMonthlyAmount / 100000).toFixed(1)}L</p>
+                <p className="text-xl font-bold text-foreground">৳{(avgMonthlyAmount / 100000).toFixed(1)}L</p>
               </div>
               <TrendingUp className="w-8 h-8 text-emerald-500 flex-shrink-0" />
             </div>
@@ -451,7 +451,7 @@ export default function ReportsPage() {
                   <YAxis dataKey="branch" type="category" stroke="hsl(var(--muted-foreground))" style={{ fontSize: '10px' }} width={100} />
                   <Tooltip
                     contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
-                    formatter={(value: any) => `₹${(value / 100000).toFixed(2)}L`}
+                    formatter={(value: any) => `৳${(value / 100000).toFixed(2)}L`}
                   />
                   <Bar dataKey="spending" fill="#3b82f6" radius={[0, 4, 4, 0]} />
                 </BarChart>
@@ -470,12 +470,12 @@ export default function ReportsPage() {
                   <Tooltip
                     contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
                     formatter={(value: any, name: string) => {
-                      if (name === 'spending') return [`₹${(value / 100000).toFixed(2)}L`, 'Total Spending']
+                      if (name === 'spending') return [`৳${(value / 100000).toFixed(2)}L`, 'Total Spending']
                       return [value, 'Orders']
                     }}
                   />
                   <Legend />
-                  <Bar dataKey="spending" fill="hsl(var(--accent))" name="Spending (₹)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="spending" fill="hsl(var(--accent))" name="Spending (৳)" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="orders" fill="#10b981" name="Order Count" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -569,7 +569,7 @@ export default function ReportsPage() {
                   <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
                   <Tooltip
                     contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
-                    formatter={(value: any) => `₹${(value / 100000).toFixed(2)}L`}
+                    formatter={(value: any) => `৳${(value / 100000).toFixed(2)}L`}
                   />
                   <Bar dataKey="totalAmount" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -617,7 +617,7 @@ export default function ReportsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="period" stroke="hsl(var(--muted-foreground))" />
                 <YAxis stroke="hsl(var(--muted-foreground))" />
-                <Tooltip formatter={(value: number) => `₹${(value / 1000).toFixed(2)}K`} />
+                <Tooltip formatter={(value: number) => `৳${(value / 1000).toFixed(2)}K`} />
                 <Legend />
                 <Line type="monotone" dataKey="amount" stroke="hsl(var(--accent))" strokeWidth={2} name="Spending" />
                 <Line type="monotone" dataKey="orderCount" stroke="#60a5fa" strokeWidth={2} name="Order Count" />
@@ -659,7 +659,7 @@ export default function ReportsPage() {
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-foreground text-sm">{risk.supplier}</span>
                       <span className="text-muted-foreground text-xs">
-                        ₹{(risk.totalSpend / 1000).toFixed(1)}K ({risk.concentration.toFixed(1)}%)
+                        ৳{(risk.totalSpend / 1000).toFixed(1)}K ({risk.concentration.toFixed(1)}%)
                       </span>
                     </div>
                     <div className="w-full bg-card-hover rounded-full h-2">
@@ -703,7 +703,7 @@ export default function ReportsPage() {
                         </p>
                       </div>
                       <div className="text-right ml-4">
-                        <p className="text-sm font-mono text-accent">₹{(supplier.totalAmount / 100000).toFixed(1)}L</p>
+                        <p className="text-sm font-mono text-accent">৳{(supplier.totalAmount / 100000).toFixed(1)}L</p>
                         <p className={`text-xs ${!isFinite(supplier.rateVolatility) ? 'text-muted-foreground' : supplier.rateVolatility > 0.15 ? 'text-red-400' : 'text-green-400'}`}>
                           Vol: {isFinite(supplier.rateVolatility) ? `${(supplier.rateVolatility * 100).toFixed(1)}%` : 'N/A'}
                         </p>
