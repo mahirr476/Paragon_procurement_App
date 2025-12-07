@@ -97,16 +97,26 @@ export async function getChatSessions(userId: string): Promise<ChatSession[]> {
 }
 
 export async function saveChatSession(userId: string, session: ChatSession) {
+  if (!session.id) {
+    console.error("Cannot save chat session: session.id is missing")
+    return { success: false, error: "Session ID is required" }
+  }
+
   const response = await fetch("/api/chat/sessions", {
-    method: session.id ? "PUT" : "POST",
+    method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      userId,
       sessionId: session.id,
-      title: session.title,
       updates: { title: session.title },
     }),
   })
+
+  if (!response.ok) {
+    const errorData = await response.json()
+    console.error("Failed to save chat session:", errorData)
+    return { success: false, error: errorData.error || "Failed to save session" }
+  }
+
   return response.json()
 }
 

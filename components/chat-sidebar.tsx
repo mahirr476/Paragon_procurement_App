@@ -7,9 +7,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { X, Send, Loader2, Sparkles, MessageSquarePlus, Minimize2 } from "lucide-react"
 import type { ChatMessage, ChatSession } from "@/lib/types"
-import { getCurrentPOs, getApprovedPOs, saveChatSession } from "@/lib/storage"
+import { getCurrentPOs, getApprovedPOs, getChatSessions, saveChatSession } from "@/lib/storage"
+import { getCurrentUser } from "@/lib/auth"
 
 export function ChatSidebar() {
+  const [userId, setUserId] = useState<string | null>(null)
+
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)
   const [activeSessions, setActiveSessions] = useState<ChatSession[]>([])
@@ -21,23 +24,101 @@ export function ChatSidebar() {
 
   const currentSession = activeSessions.find((s) => s.id === activeSessionId)
 
+  // Get current user ID on mount
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
-
-  const handleNewChat = () => {
-    const newSession: ChatSession = {
-      id: Date.now().toString(),
-      title: "New Conversation",
-      messages: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+    const user = getCurrentUser()
+    if (user) {
+      setUserId(user.id)
+    } else {
+      console.warn("No user logged in - chat features disabled")
     }
-    setActiveSessions((prev) => [...prev, newSession])
-    setActiveSessionId(newSession.id)
-    setMessages([])
-    setIsOpen(true)
-    setIsMinimized(false)
+  }, [])
+
+  // Load existing chat sessions from the database on mount
+  useEffect(() => {
+    if (!userId) return
+
+    const loadSessions = async () => {
+      try {
+        const sessions = await getChatSessions(userId)
+        setActiveSessions(sessions)
+
+        if (sessions.length > 0) {
+          setActiveSessionId(sessions[0].id)
+          setMessages(sessions[0].messages)
+          setIsOpen(true)
+        }
+      } catch (error) {
+        console.error("Failed to load chat sessions", error)
+      }
+    }
+
+    loadSessions()
+  }, [userId])
+
+  // Auto-scroll to bottom when messages change or loading state changes
+  useEffect(() => {
+    if (messages.length > 0 || isLoading) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+      }, 100)
+    }
+  }, [messages, isLoading])
+
+  const handleNewChat = async () => {
+    if (!userId) {
+      console.error("Cannot create chat: No user logged in")
+      return
+    }
+
+    try {
+      const response = await fetch("/api/chat/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: userId,
+          title: "New Conversation",
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to create chat session")
+      }
+
+      const data = await response.json()
+      if (!data.success) {
+        throw new Error(data.error || "Failed to create chat session")
+      }
+      const session = data.session as any
+
+      const normalizedSession: ChatSession = {
+        ...session,
+        createdAt: new Date(session.createdAt),
+        updatedAt: new Date(session.updatedAt),
+        messages: (session.messages ?? []).map((m: any) => ({
+          ...m,
+          timestamp: new Date(m.timestamp),
+        })),
+      }
+
+      setActiveSessions((prev) => [...prev, normalizedSession])
+      setActiveSessionId(normalizedSession.id)
+      setMessages(normalizedSession.messages)
+      setIsOpen(true)
+      setIsMinimized(false)
+      
+      // Auto-scroll to input and focus it after a short delay
+      setTimeout(() => {
+        const inputElement = document.querySelector('[placeholder="Ask about your POs..."]') as HTMLInputElement
+        if (inputElement) {
+          inputElement.focus()
+          inputElement.scrollIntoView({ behavior: "smooth", block: "nearest" })
+        }
+      }, 150)
+    } catch (error) {
+      console.error("Failed to start new chat session", error)
+    }
   }
 
   const handleSwitchSession = (sessionId: string) => {
@@ -46,6 +127,19 @@ export function ChatSidebar() {
       setActiveSessionId(sessionId)
       setMessages(session.messages)
       setIsMinimized(false)
+      
+      // Auto-scroll to bottom when switching sessions
+      setTimeout(() => {
+        if (session.messages.length > 0) {
+          messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+        } else {
+          // Focus input if no messages
+          const inputElement = document.querySelector('[placeholder="Ask about your POs..."]') as HTMLInputElement
+          if (inputElement) {
+            inputElement.focus()
+          }
+        }
+      }, 100)
     }
   }
 
@@ -77,24 +171,57 @@ export function ChatSidebar() {
   const handleSend = async () => {
     if (!input.trim() || isLoading || !currentSession) return
 
+    const userInput = input
+    setInput("")
+    setIsLoading(true)
+
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: "user",
-      content: input,
+      content: userInput,
       timestamp: new Date(),
     }
 
     const updatedMessages = [...messages, userMessage]
     setMessages(updatedMessages)
-    setInput("")
-    setIsLoading(true)
 
     if (messages.length === 0) {
-      currentSession.title = input.slice(0, 40) + (input.length > 40 ? "..." : "")
+      currentSession.title = userInput.slice(0, 40) + (userInput.length > 40 ? "..." : "")
       setActiveSessions((prev) => prev.map((s) => (s.id === currentSession.id ? currentSession : s)))
+
+      // Persist title update
+      try {
+        if (userId && currentSession.id) {
+          const saveResult = await saveChatSession(userId, currentSession)
+          if (!saveResult.success) {
+            console.error("Failed to save chat session title:", saveResult.error)
+          }
+        }
+      } catch (error) {
+        console.error("Failed to save chat session title", error)
+      }
     }
 
     try {
+      // Persist user message to the database
+      try {
+        const userMsgResponse = await fetch("/api/chat/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId: currentSession.id,
+            role: "user",
+            content: userInput,
+          }),
+        })
+        if (!userMsgResponse.ok) {
+          const errorData = await userMsgResponse.json()
+          console.error("Failed to save user message:", errorData.error || "Unknown error")
+        }
+      } catch (error) {
+        console.error("Failed to save user message", error)
+      }
+
       const currentPOs = await getCurrentPOs()
       const approvedPOs = await getApprovedPOs()
 
@@ -102,15 +229,44 @@ export function ChatSidebar() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          query: input,
+          query: userInput,
           currentPOs: currentPOs.length,
           approvedPOs: approvedPOs.length,
         }),
       })
 
-      if (!response.ok) throw new Error("Analysis failed")
-
       const data = await response.json()
+
+      if (!response.ok) {
+        // Extract the full error message, especially for rate limits and API key errors
+        let errorMessage = data.error || "Analysis failed. Please try again."
+        
+        // If it's an API key error, format it nicely
+        if (response.status === 401 || errorMessage.includes("Invalid API Key") || errorMessage.includes("invalid api key")) {
+          errorMessage = `🔑 Invalid API Key. Please set ANTHROPIC_API_KEY (Claude) in your .env.local file.\n\nGet your Claude API key at: https://console.anthropic.com/\n\nAfter adding the key, restart your development server.`;
+        }
+        // If it's a "request too large" error, format it nicely
+        else if (response.status === 413 || errorMessage.includes("too large") || errorMessage.includes("Request too large") || errorMessage.includes("TPM")) {
+          errorMessage = `📊 Request too large. The data is too extensive for the current model.\n\nTry asking a more specific question, or check your API limits.`;
+        }
+        // If it's a rate limit error, format it nicely
+        else if (response.status === 429 || errorMessage.includes("Rate limit") || errorMessage.includes("rate limit")) {
+          // Extract the "Please try again in X" part if it exists
+          const timeMatch = errorMessage.match(/Please try again in ([^.]+)/);
+          if (timeMatch) {
+            errorMessage = `⚠️ Rate limit reached. Please try again in ${timeMatch[1]}.`;
+          } else {
+            errorMessage = `⚠️ Rate limit reached. ${errorMessage}`;
+          }
+        }
+        
+        throw new Error(errorMessage)
+      }
+
+      if (!data.analysis) {
+        throw new Error(data.error || "No response from AI service. Please check your API configuration.")
+      }
+
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
@@ -123,16 +279,62 @@ export function ChatSidebar() {
 
       currentSession.messages = finalMessages
       currentSession.updatedAt = new Date()
-      saveChatSession("user", currentSession)
+      
+      // Auto-scroll to latest message
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+      }, 100)
+      // Persist assistant message and updated session metadata
+      try {
+        const assistantMsgResponse = await fetch("/api/chat/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sessionId: currentSession.id,
+            role: "assistant",
+            content: assistantMessage.content,
+          }),
+        })
+        if (!assistantMsgResponse.ok) {
+          const errorData = await assistantMsgResponse.json()
+          console.error("Failed to save assistant message:", errorData.error || "Unknown error")
+        }
+
+        if (userId && currentSession.id) {
+          const saveResult = await saveChatSession(userId, currentSession)
+          if (!saveResult.success) {
+            console.error("Failed to save chat session:", saveResult.error)
+          }
+        }
+      } catch (error) {
+        console.error("Failed to save assistant message or session", error)
+      }
+
       setActiveSessions((prev) => prev.map((s) => (s.id === currentSession.id ? currentSession : s)))
     } catch (err) {
+      let errorText = err instanceof Error ? err.message : "Sorry, I encountered an error analyzing your request."
+      
+      // Provide helpful message for API key errors
+      if (errorText.includes("Invalid API Key") || errorText.includes("invalid api key") || errorText.includes("API key not configured")) {
+        errorText = `🔑 ${errorText}`
+      }
+      // Provide helpful message for "request too large" errors
+      else if (errorText.includes("too large") || errorText.includes("Request too large") || errorText.includes("TPM")) {
+        errorText = `📊 ${errorText}`
+      }
+      // Provide helpful message for rate limits
+      else if (errorText.includes("Rate limit") || errorText.includes("rate limit")) {
+        errorText = `⚠️ Rate limit reached. ${errorText.includes("Please try again in") ? errorText : "Please try again later."}`
+      }
+      
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: "Sorry, I encountered an error analyzing your request.",
+        content: errorText,
         timestamp: new Date(),
       }
       setMessages((prev) => [...prev, errorMessage])
+      console.error("Chat analysis error:", err)
     } finally {
       setIsLoading(false)
     }
@@ -141,7 +343,7 @@ export function ChatSidebar() {
   return (
     <>
       {/* Floating Action Button */}
-      {!isOpen && !isMinimized && (
+      {userId && !isOpen && !isMinimized && (
         <div className="fixed bottom-6 right-6 z-50">
           <Button
             onClick={handleNewChat}
@@ -235,12 +437,20 @@ export function ChatSidebar() {
                     }`}
                   >
                     <span className="truncate max-w-[120px]">{session.title}</span>
-                    <button
+                    <span
                       onClick={(e) => handleCloseSession(session.id, e)}
-                      className="opacity-0 group-hover:opacity-100 hover:text-orange-400 transition-opacity"
+                      className="opacity-0 group-hover:opacity-100 hover:text-orange-400 transition-opacity cursor-pointer inline-flex items-center justify-center"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault()
+                          handleCloseSession(session.id, e as any)
+                        }
+                      }}
                     >
                       <X className="h-3 w-3" />
-                    </button>
+                    </span>
                   </button>
                 ))}
                 <Button
@@ -256,7 +466,7 @@ export function ChatSidebar() {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
             {messages.length === 0 ? (
               <div className="h-full flex items-center justify-center">
                 <div className="text-center space-y-4 p-4">
@@ -282,31 +492,31 @@ export function ChatSidebar() {
                 </div>
               </div>
             ) : (
-              messages.map((msg) => (
-                <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                  <div
-                    className={`max-w-[80%] px-3 py-2 rounded-xl text-sm ${
-                      msg.role === "user"
-                        ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white"
-                        : "bg-neutral-900 border border-neutral-800 text-neutral-100"
-                    }`}
-                  >
-                    <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+              <>
+                {messages.map((msg) => (
+                  <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                    <div
+                      className={`max-w-[85%] px-3 py-2.5 rounded-2xl text-sm ${
+                        msg.role === "user"
+                          ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-br-sm"
+                          : "bg-neutral-900 border border-neutral-800 text-neutral-100 rounded-bl-sm"
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                    </div>
                   </div>
-                </div>
-              ))
+                ))}
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-neutral-900 border border-neutral-800 rounded-2xl rounded-bl-sm px-3 py-2.5 flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 text-orange-500 animate-spin" />
+                      <span className="text-xs text-neutral-300">Analyzing...</span>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </>
             )}
-
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2 flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 text-orange-500 animate-spin" />
-                  <span className="text-xs text-neutral-300">Analyzing...</span>
-                </div>
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
           </div>
 
           {/* Input */}
@@ -323,15 +533,15 @@ export function ChatSidebar() {
                 }}
                 placeholder="Ask about your POs..."
                 disabled={isLoading}
-                className="bg-neutral-900 border-neutral-700 focus:border-orange-500 text-white placeholder-neutral-500 text-sm h-10 rounded-xl"
+                className="bg-neutral-900 border-neutral-700 focus:border-orange-500 text-white placeholder-neutral-500 text-sm h-11 rounded-xl"
               />
               <Button
                 onClick={handleSend}
                 disabled={isLoading || !input.trim()}
-                className="bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white h-10 w-10 rounded-xl flex-shrink-0"
+                className="bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white h-11 w-11 rounded-xl flex-shrink-0"
                 size="icon"
               >
-                <Send className="w-4 h-4" />
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </Button>
             </div>
           </div>
