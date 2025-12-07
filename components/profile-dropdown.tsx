@@ -83,32 +83,32 @@ export function ProfileDropdown({ user }: ProfileDropdownProps) {
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="flex items-center gap-2 text-neutral-400 hover:!bg-transparent hover:!text-orange-500 h-auto p-1"
+            className="flex items-center gap-2 text-muted-foreground hover:!bg-transparent hover:!text-accent h-auto p-1"
           >
-            <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-sm leading-tight min-w-[2rem]">
+            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm leading-tight min-w-[2rem]">
               {user.name.charAt(0).toUpperCase()}
             </div>
             <span className="hidden md:inline text-sm">{user.name}</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56 bg-neutral-900 border-neutral-800">
-          <DropdownMenuLabel className="text-neutral-400">
+        <DropdownMenuContent align="end" className="w-56 bg-card border-border">
+          <DropdownMenuLabel className="text-muted-foreground">
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium text-white">{user.name}</p>
-              <p className="text-xs text-neutral-500">{user.email}</p>
+              <p className="text-sm font-medium text-foreground">{user.name}</p>
+              <p className="text-xs text-muted-foreground">{user.email}</p>
             </div>
           </DropdownMenuLabel>
-          <DropdownMenuSeparator className="bg-neutral-800" />
+          <DropdownMenuSeparator className="bg-border" />
           <DropdownMenuItem
             onClick={() => setShowProfileDialog(true)}
-            className="text-neutral-300 hover:text-white hover:bg-neutral-800 cursor-pointer"
+            className="text-foreground hover:text-foreground hover:bg-muted cursor-pointer"
           >
             <Settings className="mr-2 h-4 w-4" />
             <span>Profile Settings</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={handleLogout}
-            className="text-red-400 hover:text-red-300 hover:bg-neutral-800 cursor-pointer"
+            className="text-red-400 hover:text-red-300 hover:bg-muted cursor-pointer"
           >
             <LogOut className="mr-2 h-4 w-4" />
             <span>Logout</span>
@@ -118,10 +118,10 @@ export function ProfileDropdown({ user }: ProfileDropdownProps) {
 
       {/* Profile Settings Dialog */}
       <Dialog open={showProfileDialog} onOpenChange={setShowProfileDialog}>
-        <DialogContent className="bg-neutral-900 border-neutral-800 text-white">
+        <DialogContent className="bg-card border-border text-foreground">
           <DialogHeader>
             <DialogTitle>Profile Settings</DialogTitle>
-            <DialogDescription className="text-neutral-400">
+            <DialogDescription className="text-muted-foreground">
               Update your account information
             </DialogDescription>
           </DialogHeader>
@@ -140,40 +140,40 @@ export function ProfileDropdown({ user }: ProfileDropdownProps) {
 
           <div className="space-y-4">
             <div>
-              <Label htmlFor="name" className="text-neutral-300">Full Name</Label>
+              <Label htmlFor="name" className="text-foreground">Full Name</Label>
               <Input
                 id="name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="bg-neutral-800 border-neutral-700 text-white mt-1"
+                className="bg-muted border-border text-foreground mt-1"
               />
             </div>
 
             <div>
-              <Label htmlFor="email" className="text-neutral-300">Email</Label>
+              <Label htmlFor="email" className="text-foreground">Email</Label>
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="bg-neutral-800 border-neutral-700 text-white mt-1"
+                className="bg-muted border-border text-foreground mt-1"
               />
             </div>
 
             <div>
-              <Label htmlFor="company" className="text-neutral-300">Company</Label>
+              <Label htmlFor="company" className="text-foreground">Company</Label>
               <Input
                 id="company"
                 value={formData.company}
                 onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                className="bg-neutral-800 border-neutral-700 text-white mt-1"
+                className="bg-muted border-border text-foreground mt-1"
               />
             </div>
 
             <div className="flex gap-2">
               <Button
                 onClick={handleUpdateProfile}
-                className="flex-1 bg-orange-500 hover:bg-orange-600"
+                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 Update Profile
               </Button>
@@ -191,10 +191,10 @@ export function ProfileDropdown({ user }: ProfileDropdownProps) {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="bg-neutral-900 border-neutral-800 text-white">
+        <DialogContent className="bg-card border-border text-foreground">
           <DialogHeader>
             <DialogTitle>Delete Account</DialogTitle>
-            <DialogDescription className="text-neutral-400">
+            <DialogDescription className="text-muted-foreground">
               Are you sure you want to delete your account? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
@@ -203,7 +203,7 @@ export function ProfileDropdown({ user }: ProfileDropdownProps) {
             <Button
               variant="outline"
               onClick={() => setShowDeleteDialog(false)}
-              className="flex-1 border-neutral-700"
+              className="flex-1 border-border"
             >
               Cancel
             </Button>
