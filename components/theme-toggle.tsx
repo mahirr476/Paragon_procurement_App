@@ -7,36 +7,36 @@ import { getTheme, saveTheme } from "@/lib/storage"
 import { getCurrentUser } from "@/lib/auth"
 
 const darkTheme = {
-  id: 'cyberpunk',
+  id: 'dark-blue-amber',
   colors: {
-    background: '240 10% 3.9%',
-    foreground: '0 0% 98%',
-    card: '240 10% 8%',
-    cardForeground: '0 0% 98%',
-    primary: '24 100% 50%',
-    primaryForeground: '0 0% 98%',
-    muted: '240 10% 14%',
-    mutedForeground: '240 5% 64%',
-    border: '240 10% 18%',
-    accent: '24 100% 50%',
-    ring: '24 100% 50%',
+    background: '220 40% 8%',        // Dark blue background
+    foreground: '0 0% 98%',          // White text
+    card: '220 35% 12%',             // Slightly lighter dark blue for cards
+    cardForeground: '0 0% 98%',      // White text on cards
+    primary: '45 93% 58%',           // Amber yellow
+    primaryForeground: '220 40% 8%', // Dark blue text on amber
+    muted: '220 30% 16%',            // Muted dark blue
+    mutedForeground: '218 15% 65%',  // Muted white/gray
+    border: '220 25% 20%',           // Dark blue border
+    accent: '45 93% 58%',            // Amber yellow accent
+    ring: '45 93% 58%',              // Amber yellow ring
   }
 }
 
 const lightTheme = {
-  id: 'light',
+  id: 'light-blue',
   colors: {
-    background: '0 0% 100%',
-    foreground: '222 47% 11%',
-    card: '0 0% 98%',
-    cardForeground: '222 47% 11%',
-    primary: '222 47% 25%',
-    primaryForeground: '210 40% 98%',
-    muted: '210 40% 96%',
-    mutedForeground: '215 16% 47%',
-    border: '214 32% 91%',
-    accent: '210 40% 90%',
-    ring: '222 47% 25%',
+    background: '0 0% 100%',         // Pure white background
+    foreground: '0 0% 0%',           // Black text
+    card: '0 0% 98%',                // Off-white cards
+    cardForeground: '0 0% 0%',       // Black text on cards
+    primary: '220 40% 8%',           // Dark blue (same as dark mode background)
+    primaryForeground: '0 0% 100%',  // White text on blue
+    muted: '210 40% 96%',            // Very light blue muted
+    mutedForeground: '215 25% 27%',  // Dark blue/black muted text
+    border: '214 32% 91%',           // Light blue border
+    accent: '220 40% 8%',            // Dark blue accent
+    ring: '220 40% 8%',              // Dark blue ring
   }
 }
 
@@ -68,7 +68,9 @@ export function ThemeToggle() {
       const user = getCurrentUser()
       if (user) {
         const theme = await getTheme(user.id)
-        const isLightMode = theme === 'light'
+        // Handle legacy theme IDs and new ones
+        const isLightMode = theme === 'light' || theme === 'light-amber' || theme === 'light-blue-amber' || theme === 'light-blue' ||
+                           theme === 'warm' || theme === 'cool' || theme === 'monochrome-light'
         setIsDark(!isLightMode)
         applyTheme(
           isLightMode ? lightTheme.id : darkTheme.id,
