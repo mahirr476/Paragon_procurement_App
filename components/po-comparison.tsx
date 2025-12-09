@@ -170,9 +170,9 @@ export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onD
 
   if (!Array.isArray(currentPOs) || currentPOs.length === 0) {
     return (
-      <Card className="bg-neutral-900 border-neutral-700">
+      <Card className="bg-card border-border">
         <CardContent className="p-8 text-center">
-          <p className="text-neutral-400 text-sm">Upload a CSV to begin analysis</p>
+          <p className="text-muted-foreground text-sm">Upload a CSV to begin analysis</p>
         </CardContent>
       </Card>
     )
@@ -180,32 +180,32 @@ export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onD
 
   return (
     <>
-      <Card className="bg-neutral-900 border-neutral-700">
+      <Card className="bg-card border-border">
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4" data-tour="upload-actions">
-              <Checkbox checked={allSelected} onCheckedChange={handleSelectAll} className="border-neutral-600" />
-              <CardTitle className="text-sm font-medium text-neutral-300 tracking-wider">
+              <Checkbox checked={allSelected} onCheckedChange={handleSelectAll} className="border-border" />
+              <CardTitle className="text-sm font-medium text-muted-foreground tracking-wider">
                 UPLOADED PURCHASE ORDERS ({filteredPOs.length})
-                {selectedPOIds.size > 0 && <span className="ml-2 text-orange-500">{selectedPOIds.size} selected</span>}
+                {selectedPOIds.size > 0 && <span className="ml-2 text-primary">{selectedPOIds.size} selected</span>}
               </CardTitle>
             </div>
 
             {branches.length > 0 && (
               <div className="flex items-center gap-2" data-tour="upload-branch-filter">
-                <Building2 className="w-4 h-4 text-neutral-500" />
+                <Building2 className="w-4 h-4 text-muted-foreground" />
                 <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-                  <SelectTrigger className="w-[200px] bg-neutral-800 border-neutral-700 text-white">
+                  <SelectTrigger className="w-[200px] bg-card border-border text-foreground">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-neutral-800 border-neutral-700">
-                    <SelectItem value="all" className="text-white hover:bg-neutral-700">
+                  <SelectContent className="bg-card border-border">
+                    <SelectItem value="all" className="text-foreground hover:bg-muted">
                       All Branches ({currentPOs.length})
                     </SelectItem>
                     {branches.map((branch) => {
                       const branchCount = currentPOs.filter((po) => po.branch === branch).length
                       return (
-                        <SelectItem key={branch} value={branch} className="text-white hover:bg-neutral-700">
+                        <SelectItem key={branch} value={branch} className="text-foreground hover:bg-muted">
                           {branch} ({branchCount})
                         </SelectItem>
                       )
@@ -237,10 +237,10 @@ export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onD
           )}
 
           {allIssues.length > 0 && (
-            <div className="mt-4 p-3 bg-orange-500/10 border border-orange-500/20 rounded">
+            <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-orange-500" />
-                <p className="text-sm text-orange-300">
+                <AlertTriangle className="w-4 h-4 text-primary" />
+                <p className="text-sm text-foreground">
                   {allIssues.length} issue{allIssues.length !== 1 ? "s" : ""} found requiring attention
                 </p>
               </div>
@@ -262,8 +262,8 @@ export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onD
                   className={`border rounded p-4 transition-all ${
                     highestIssue
                       ? `${getSeverityColor(highestIssue.severity)} border-l-4 hover:bg-opacity-30`
-                      : "border-neutral-700 hover:border-neutral-600 hover:bg-neutral-800/50"
-                  } ${isSelected ? "ring-2 ring-orange-500/50" : ""}`}
+                      : "border-border hover:border-muted hover:bg-muted/50"
+                  } ${isSelected ? "ring-2 ring-primary/50" : ""}`}
                 >
                   <div className="flex items-start gap-4">
                     <Checkbox
@@ -277,14 +277,14 @@ export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onD
                         }
                       }}
                       onCheckedChange={(checked) => handleSelectGroup(group, checked as boolean)}
-                      className="mt-1 border-neutral-600"
+                      className="mt-1 border-border"
                       onClick={(e) => e.stopPropagation()}
                     />
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-3">
-                        <span className="text-sm font-semibold text-white">{group.supplier}</span>
-                        <Badge variant="outline" className="text-xs border-orange-500/30 text-orange-400">
+                        <span className="text-sm font-semibold text-foreground">{group.supplier}</span>
+                        <Badge variant="outline" className="text-xs border-primary/30 text-primary">
                           ৳{group.totalAmount.toLocaleString()}
                         </Badge>
                         {isMultiItem && (
@@ -310,13 +310,13 @@ export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onD
                           return (
                             <div
                               key={po.id}
-                              className={`${idx > 0 ? "pt-3 border-t border-neutral-700/50" : ""} cursor-pointer hover:bg-neutral-800/30 p-2 rounded transition-colors`}
+                              className={`${idx > 0 ? "pt-3 border-t border-border/50" : ""} cursor-pointer hover:bg-muted/30 p-2 rounded transition-colors`}
                               onClick={() => setSelectedPO(po)}
                             >
                               <div className="flex items-center gap-2 mb-2">
-                                <span className="text-xs font-mono text-neutral-400">{po.orderNo}</span>
+                                <span className="text-xs font-mono text-muted-foreground">{po.orderNo}</span>
                                 {po.branch && (
-                                  <Badge variant="outline" className="text-xs border-neutral-600 text-neutral-400">
+                                  <Badge variant="outline" className="text-xs border-border text-muted-foreground">
                                     {po.branch}
                                   </Badge>
                                 )}
@@ -324,33 +324,33 @@ export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onD
 
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                                 <div>
-                                  <p className="text-neutral-500">Item</p>
-                                  <p className="text-white truncate">{po.item}</p>
+                                  <p className="text-muted-foreground">Item</p>
+                                  <p className="text-foreground truncate">{po.item}</p>
                                 </div>
                                 <div>
-                                  <p className="text-neutral-500">Date</p>
-                                  <p className="text-white">{po.date}</p>
+                                  <p className="text-muted-foreground">Date</p>
+                                  <p className="text-foreground">{po.date}</p>
                                 </div>
                                 <div>
-                                  <p className="text-neutral-500">Quantity</p>
-                                  <p className="text-white">
+                                  <p className="text-muted-foreground">Quantity</p>
+                                  <p className="text-foreground">
                                     {po.maxQty} {po.unit}
                                   </p>
                                 </div>
                                 <div>
-                                  <p className="text-neutral-500">Rate</p>
-                                  <p className="text-white font-mono">৳{po.rate.toLocaleString()}</p>
+                                  <p className="text-muted-foreground">Rate</p>
+                                  <p className="text-foreground font-mono">৳{po.rate.toLocaleString()}</p>
                                 </div>
                               </div>
 
                               {poIssues.length > 0 && (
-                                <div className="mt-2 pt-2 border-t border-neutral-700/30">
+                                <div className="mt-2 pt-2 border-t border-border/30">
                                   <div className="flex items-start gap-2">
-                                    <AlertTriangle className="w-3 h-3 text-orange-500 mt-0.5 flex-shrink-0" />
+                                    <AlertTriangle className="w-3 h-3 text-primary mt-0.5 flex-shrink-0" />
                                     <div className="flex-1">
                                       <ul className="space-y-1">
                                         {poIssues.map((issue, issueIdx) => (
-                                          <li key={issueIdx} className="text-xs text-orange-300">
+                                          <li key={issueIdx} className="text-xs text-foreground">
                                             • {issue.message}
                                           </li>
                                         ))}

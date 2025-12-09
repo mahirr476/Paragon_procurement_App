@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { DashboardOverview } from "@/components/dashboard-overview"
 import { ProfileDropdown } from "@/components/profile-dropdown"
 import { NotificationBell } from "@/components/notification-bell"
-import { ThemeSelector } from "@/components/theme-selector"
+import { ThemeToggle } from "@/components/theme-toggle"
 import UploadPage from "./upload/page"
 import IntelligencePage from "./intelligence/page"
 import SystemsPage from "./systems/page"
@@ -381,10 +381,6 @@ export default function TacticalDashboard() {
             </div>
           )}
 
-          {/* Theme selector pushed to bottom */}
-          <div className={`mt-auto pt-4 border-t border-border ${sidebarCollapsed ? "px-2" : "mt-20"}`}>
-            <ThemeSelector collapsed={sidebarCollapsed} />
-          </div>
         </div>
       </div>
 
@@ -406,8 +402,11 @@ export default function TacticalDashboard() {
             <div className="text-xs text-muted-foreground">
               {new Date().toLocaleDateString("en-IN", { year: "numeric", month: "2-digit", day: "2-digit" })}
             </div>
-            <div data-tour="notification-bell">
-              <NotificationBell />
+            <div className="flex items-center gap-1">
+              <ThemeToggle />
+              <div data-tour="notification-bell">
+                <NotificationBell />
+              </div>
             </div>
             <div data-tour="profile-icon">
               <ProfileDropdown user={currentUser} />

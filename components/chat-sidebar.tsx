@@ -145,9 +145,9 @@ export function ChatSidebar() {
         <div className="fixed bottom-6 right-6 z-50">
           <Button
             onClick={handleNewChat}
-            className="h-14 w-14 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg hover:shadow-xl hover:shadow-orange-500/50 transition-all duration-300 hover:scale-110"
+            className="h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-lg hover:shadow-xl hover:shadow-primary/50 transition-all duration-300 hover:scale-110"
           >
-            <Sparkles className="h-6 w-6 text-white" />
+            <Sparkles className="h-6 w-6 text-primary-foreground" />
           </Button>
         </div>
       )}
@@ -159,13 +159,13 @@ export function ChatSidebar() {
             <div
               key={session.id}
               onClick={() => handleSwitchSession(session.id)}
-              className="group flex items-center gap-2 bg-neutral-900 hover:bg-neutral-800 border-l-4 border-orange-500 rounded-l-xl shadow-lg cursor-pointer transition-all duration-300 hover:translate-x-[-4px]"
+              className="group flex items-center gap-2 bg-card hover:bg-muted border-l-4 border-primary rounded-l-xl shadow-lg cursor-pointer transition-all duration-300 hover:translate-x-[-4px]"
             >
               <div className="px-4 py-3 flex items-center gap-3 min-w-0">
-                <Sparkles className="h-4 w-4 text-orange-400 flex-shrink-0" />
+                <Sparkles className="h-4 w-4 text-primary flex-shrink-0" />
                 <div className="min-w-0 max-w-[200px]">
-                  <p className="text-sm font-medium text-white truncate">{session.title}</p>
-                  <p className="text-xs text-neutral-400">{session.messages.length} messages</p>
+                  <p className="text-sm font-medium text-foreground truncate">{session.title}</p>
+                  <p className="text-xs text-muted-foreground">{session.messages.length} messages</p>
                 </div>
                 <Button
                   onClick={(e) => handleCloseSession(session.id, e)}
@@ -173,38 +173,38 @@ export function ChatSidebar() {
                   size="icon"
                   className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                 >
-                  <X className="h-3 w-3 text-neutral-400" />
+                  <X className="h-3 w-3 text-muted-foreground" />
                 </Button>
               </div>
             </div>
           ))}
           <Button
             onClick={handleNewChat}
-            className="h-12 w-12 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg"
+            className="h-12 w-12 rounded-full bg-primary hover:bg-primary/90 shadow-lg"
           >
-            <MessageSquarePlus className="h-5 w-5 text-white" />
+            <MessageSquarePlus className="h-5 w-5 text-primary-foreground" />
           </Button>
         </div>
       )}
 
       {/* Chat Panel */}
       {isOpen && !isMinimized && (
-        <div className="fixed bottom-6 right-6 w-[420px] h-[600px] bg-neutral-950 border border-neutral-800 rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+        <div className="fixed bottom-6 right-6 w-[420px] h-[600px] bg-card border border-border rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
           {/* Header with tabs */}
-          <div className="bg-gradient-to-r from-orange-500/10 to-orange-600/5 border-b border-neutral-800 flex-shrink-0">
+          <div className="bg-primary/10 border-b border-border flex-shrink-0">
             <div className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-2">
-                <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-2 rounded-lg">
-                  <Sparkles className="w-4 h-4 text-white" />
+                <div className="bg-primary p-2 rounded-lg">
+                  <Sparkles className="w-4 h-4 text-primary-foreground" />
                 </div>
-                <span className="text-white font-semibold text-sm">AI Assistant</span>
+                <span className="text-foreground font-semibold text-sm">AI Assistant</span>
               </div>
               <div className="flex items-center gap-1">
                 <Button
                   onClick={handleMinimize}
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-neutral-400 hover:text-white rounded-lg"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg"
                   title="Minimize"
                 >
                   <Minimize2 className="h-4 w-4" />
@@ -213,7 +213,7 @@ export function ChatSidebar() {
                   onClick={() => setIsOpen(false)}
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-neutral-400 hover:text-white rounded-lg"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg"
                   title="Close"
                 >
                   <X className="h-4 w-4" />
@@ -230,14 +230,14 @@ export function ChatSidebar() {
                     onClick={() => handleSwitchSession(session.id)}
                     className={`group flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-all flex-shrink-0 ${
                       activeSessionId === session.id
-                        ? "bg-orange-500/20 text-orange-400 border border-orange-500/30"
-                        : "text-neutral-400 hover:text-white hover:bg-neutral-800"
+                        ? "bg-primary/20 text-primary border border-primary/30"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     }`}
                   >
                     <span className="truncate max-w-[120px]">{session.title}</span>
                     <button
                       onClick={(e) => handleCloseSession(session.id, e)}
-                      className="opacity-0 group-hover:opacity-100 hover:text-orange-400 transition-opacity"
+                      className="opacity-0 group-hover:opacity-100 hover:text-primary transition-opacity"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -247,7 +247,7 @@ export function ChatSidebar() {
                   onClick={handleNewChat}
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 flex-shrink-0 text-neutral-400 hover:text-orange-400"
+                  className="h-7 w-7 flex-shrink-0 text-muted-foreground hover:text-primary"
                 >
                   <MessageSquarePlus className="h-4 w-4" />
                 </Button>
@@ -260,21 +260,21 @@ export function ChatSidebar() {
             {messages.length === 0 ? (
               <div className="h-full flex items-center justify-center">
                 <div className="text-center space-y-4 p-4">
-                  <div className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 p-6 rounded-2xl border border-orange-500/20">
-                    <Sparkles className="w-10 h-10 text-orange-400 mx-auto mb-3" />
-                    <p className="text-white font-medium text-sm mb-1">Ask me anything!</p>
-                    <p className="text-xs text-neutral-400">I can help analyze your purchase orders</p>
+                  <div className="bg-primary/10 p-6 rounded-2xl border border-primary/20">
+                    <Sparkles className="w-10 h-10 text-primary mx-auto mb-3" />
+                    <p className="text-foreground font-medium text-sm mb-1">Ask me anything!</p>
+                    <p className="text-xs text-muted-foreground">I can help analyze your purchase orders</p>
                   </div>
                   <div className="space-y-2">
                     <button
                       onClick={() => setInput("What are my top spending branches?")}
-                      className="w-full text-xs text-left text-neutral-400 hover:text-orange-400 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-orange-500/30 rounded-lg p-2.5 transition-all"
+                      className="w-full text-xs text-left text-muted-foreground hover:text-primary bg-card hover:bg-muted border border-border hover:border-primary/30 rounded-lg p-2.5 transition-all"
                     >
                       What are my top spending branches?
                     </button>
                     <button
                       onClick={() => setInput("Show me any price anomalies")}
-                      className="w-full text-xs text-left text-neutral-400 hover:text-orange-400 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-orange-500/30 rounded-lg p-2.5 transition-all"
+                      className="w-full text-xs text-left text-muted-foreground hover:text-primary bg-card hover:bg-muted border border-border hover:border-primary/30 rounded-lg p-2.5 transition-all"
                     >
                       Show me any price anomalies
                     </button>
@@ -287,8 +287,8 @@ export function ChatSidebar() {
                   <div
                     className={`max-w-[80%] px-3 py-2 rounded-xl text-sm ${
                       msg.role === "user"
-                        ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white"
-                        : "bg-neutral-900 border border-neutral-800 text-neutral-100"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted border border-border text-foreground"
                     }`}
                   >
                     <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
@@ -299,9 +299,9 @@ export function ChatSidebar() {
 
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2 flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 text-orange-500 animate-spin" />
-                  <span className="text-xs text-neutral-300">Analyzing...</span>
+                <div className="bg-muted border border-border rounded-xl px-3 py-2 flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                  <span className="text-xs text-foreground">Analyzing...</span>
                 </div>
               </div>
             )}
@@ -310,7 +310,7 @@ export function ChatSidebar() {
           </div>
 
           {/* Input */}
-          <div className="border-t border-neutral-800 bg-neutral-900/50 p-3 flex-shrink-0">
+          <div className="border-t border-border bg-muted/50 p-3 flex-shrink-0">
             <div className="flex gap-2">
               <Input
                 value={input}
@@ -323,12 +323,12 @@ export function ChatSidebar() {
                 }}
                 placeholder="Ask about your POs..."
                 disabled={isLoading}
-                className="bg-neutral-900 border-neutral-700 focus:border-orange-500 text-white placeholder-neutral-500 text-sm h-10 rounded-xl"
+                className="bg-card border-border focus:border-primary text-foreground placeholder-muted-foreground text-sm h-10 rounded-xl"
               />
               <Button
                 onClick={handleSend}
                 disabled={isLoading || !input.trim()}
-                className="bg-gradient-to-br from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white h-10 w-10 rounded-xl flex-shrink-0"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground h-10 w-10 rounded-xl flex-shrink-0"
                 size="icon"
               >
                 <Send className="w-4 h-4" />
