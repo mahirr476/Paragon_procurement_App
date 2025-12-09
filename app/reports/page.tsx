@@ -466,7 +466,7 @@ export default function ReportsPage() {
                 <BarChart data={categorySpending}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="category" stroke="hsl(var(--muted-foreground))" style={{ fontSize: '11px' }} angle={-45} textAnchor="end" height={100} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '10px' }} />
                   <Tooltip
                     contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
                     formatter={(value: any, name: string) => {
@@ -487,28 +487,27 @@ export default function ReportsPage() {
       {/* Supplier Performance */}
       {viewVisibility.supplierPerformance && (
         <div className="space-y-4">
-          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-green-500" />
-            Supplier Performance
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-green-500" />
+              Supplier Performance
+            </h2>
+            <Select value={supplierCategory} onValueChange={setSupplierCategory}>
+              <SelectTrigger className="w-[140px] h-9 text-xs">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <Card className="bg-card border-border p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-foreground">Supplier Metrics Overview</h3>
-              <Select value={supplierCategory} onValueChange={setSupplierCategory}>
-                <SelectTrigger className="w-[140px] h-8 text-xs">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -566,7 +565,7 @@ export default function ReportsPage() {
                 <BarChart data={monthlyTrends}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" style={{ fontSize: '11px' }} angle={-45} textAnchor="end" height={80} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '10px' }} />
                   <Tooltip
                     contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
                     formatter={(value: any) => `₹${(value / 100000).toFixed(2)}L`}
@@ -616,7 +615,7 @@ export default function ReportsPage() {
               <LineChart data={spendTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="period" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '10px' }} />
                 <Tooltip formatter={(value: number) => `₹${(value / 1000).toFixed(2)}K`} />
                 <Legend />
                 <Line type="monotone" dataKey="amount" stroke="hsl(var(--accent))" strokeWidth={2} name="Spending" />
@@ -741,31 +740,27 @@ export default function ReportsPage() {
       {/* Detected Anomalies */}
       {viewVisibility.anomalies && anomalies.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-orange-500" />
-            Detected Anomalies
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-orange-500" />
+              Detected Anomalies
+            </h2>
+            <Select value={anomalyCategory} onValueChange={setAnomalyCategory}>
+              <SelectTrigger className="w-[140px] h-9 text-xs">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <Card className="bg-card border-border p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-orange-500" />
-                DETECTED ANOMALIES ({anomalies.length})
-              </h3>
-              <Select value={anomalyCategory} onValueChange={setAnomalyCategory}>
-                <SelectTrigger className="w-[140px] h-8 text-xs">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {anomalies.map((anomaly, idx) => (
                 <div
