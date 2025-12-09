@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PurchaseOrder } from "@/lib/types"
 import { BarChart3, Search, TrendingUp, Package, Building2, DollarSign, X } from 'lucide-react'
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface DashboardOverviewProps {
@@ -99,7 +99,18 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
       .map(([name, value]) => ({ name, value }))
   }, [filteredPOs])
 
-  const COLORS = ['#f97316', '#fb923c', '#fdba74', '#fed7aa', '#22c55e', '#4ade80', '#86efac', '#bbf7d0']
+  const COLORS = [
+    '#3b82f6', // Blue
+    '#8b5cf6', // Purple
+    '#ec4899', // Pink
+    '#f97316', // Orange
+    '#22c55e', // Green
+    '#06b6d4', // Cyan
+    '#eab308', // Yellow
+    '#ef4444', // Red
+    '#14b8a6', // Teal
+    '#a855f7', // Violet
+  ]
 
   const clearFilters = () => {
     setSearchTerm("")
@@ -153,30 +164,6 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
           {displayValue}
         </text>
       </g>
-    )
-  }
-
-  const renderPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, name, percent }: any) => {
-    const RADIAN = Math.PI / 180
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5
-    const x = cx + radius * Math.cos(-midAngle * RADIAN)
-    const y = cy + radius * Math.sin(-midAngle * RADIAN)
-
-    const maxLength = 8
-    const displayText = name.length > maxLength ? `${name.slice(0, maxLength)}...` : name
-    const percentText = `${((percent || 0) * 100).toFixed(0)}%`
-
-    return (
-      <text
-        x={x}
-        y={y}
-        fill="white"
-        textAnchor={x > cx ? 'start' : 'end'}
-        dominantBaseline="central"
-        fontSize={10}
-      >
-        {`${displayText}: ${percentText}`}
-      </text>
     )
   }
 
@@ -442,9 +429,7 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
                   data={categoryData}
                   cx="50%"
                   cy="50%"
-                  labelLine={false}
-                  label={renderPieLabel}
-                  outerRadius={100}
+                  outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
                 >
@@ -459,7 +444,16 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
                     borderRadius: '6px',
                     color: 'hsl(var(--card-foreground))'
                   }}
+                  labelStyle={{ color: 'hsl(var(--card-foreground))' }}
+                  itemStyle={{ color: 'hsl(var(--card-foreground))' }}
                   formatter={(value: number) => [`৳${value.toLocaleString()}`, 'Amount']}
+                />
+                <Legend
+                  wrapperStyle={{
+                    fontSize: '11px',
+                    color: 'hsl(var(--foreground))'
+                  }}
+                  iconType="circle"
                 />
               </PieChart>
             </ResponsiveContainer>
