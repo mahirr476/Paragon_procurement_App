@@ -269,7 +269,7 @@ export default function ReportsPage() {
             variant="outline"
             size="sm"
             onClick={() => setShowSettings(!showSettings)}
-            className="gap-2"
+            className="gap-2 border-accent text-accent hover:bg-accent/10 hover:text-accent"
           >
             <Settings2 className="w-4 h-4" />
             {showSettings ? 'Hide' : 'Show'} Settings
