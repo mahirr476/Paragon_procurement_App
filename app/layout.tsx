@@ -1,10 +1,14 @@
 import type React from "react"
 import type { Metadata } from "next"
-import { GeistMono } from "geist/font/mono"
+import { Poppins } from "next/font/google"
 import "./globals.css"
 import { ChatSidebar } from "@/components/chat-sidebar"
 
-const geistMono = GeistMono
+const poppins = Poppins({
+  weight: ['300', '400', '500', '600', '700'],
+  subsets: ['latin'],
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: "Tactical Operations Dashboard",
@@ -18,7 +22,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es">
-      <body className={`${geistMono.className} bg-black text-white antialiased`}>
+      <body className={`${poppins.className} bg-black text-white antialiased`}>
         {children}
         <ChatSidebar />
       </body>

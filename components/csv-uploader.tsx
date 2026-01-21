@@ -51,19 +51,19 @@ export function CSVUploader({ onUploadSuccess }: CSVUploaderProps) {
   }
 
   return (
-    <Card className="bg-neutral-900 border-neutral-700" data-tour="upload-csv">
+    <Card className="bg-card border-border" data-tour="upload-csv">
       <CardHeader>
-        <CardTitle className="text-sm font-medium text-neutral-300 tracking-wider">UPLOAD NEW PO CSV</CardTitle>
+        <CardTitle className="text-sm font-medium text-muted-foreground tracking-wider">UPLOAD NEW PO CSV</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <div
-            className="border-2 border-dashed border-neutral-700 rounded-lg p-8 text-center cursor-pointer hover:border-orange-500 transition-colors"
+            className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
             onClick={() => fileInputRef.current?.click()}
           >
-            <Upload className="w-8 h-8 text-neutral-400 mx-auto mb-2" />
-            <p className="text-sm text-neutral-300">Click to upload CSV or drag and drop</p>
-            <p className="text-xs text-neutral-500">Supported format: CSV from your company software</p>
+            <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-foreground">Click to upload CSV or drag and drop</p>
+            <p className="text-xs text-muted-foreground">Supported format: CSV from your company software</p>
             <input
               ref={fileInputRef}
               type="file"
@@ -94,7 +94,7 @@ export function CSVUploader({ onUploadSuccess }: CSVUploaderProps) {
           <Button
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             {isLoading ? 'Processing...' : 'Select CSV File'}
           </Button>
