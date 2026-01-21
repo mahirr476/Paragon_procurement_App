@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: procurement_db
     ports:
-      - "5430:5432"  # Changed from 5433 due to Windows port reservation
+      - "5431:5432"
     volumes:
       - postgres_data_dev:/var/lib/postgresql/data
     healthcheck:
@@ -40,6 +40,12 @@ services:
       NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}
       NODE_ENV: development
 
+      # AI Configuration - Claude API (PRIMARY)
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # AI Configuration - Fallbacks
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      
       # Enable hot reload polling for Docker
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
@@ -76,7 +82,7 @@ services:
         npx prisma studio --port 5555 --hostname 0.0.0.0
       "
     ports:
-      - "555:5555"
+      - "1234:5555"
     restart: unless-stopped
 
 volumes:
