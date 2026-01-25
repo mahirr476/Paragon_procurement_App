@@ -145,12 +145,12 @@ export function CSVUploader({ onUploadSuccess, databases = [], onAddDatabase }: 
             </div>
 
           <div
-            className="border-2 border-dashed border-neutral-700 rounded-lg p-8 text-center cursor-pointer hover:border-orange-500 transition-colors"
+            className="border-2 border-dashed border-border rounded-lg p-8 text-center cursor-pointer hover:border-primary transition-colors"
             onClick={() => fileInputRef.current?.click()}
           >
-            <Upload className="w-8 h-8 text-neutral-400 mx-auto mb-2" />
-            <p className="text-sm text-neutral-300">Click to upload CSV or drag and drop</p>
-            <p className="text-xs text-neutral-500">Supported format: CSV from your company software</p>
+            <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-foreground">Click to upload CSV or drag and drop</p>
+            <p className="text-xs text-muted-foreground">Supported format: CSV from your company software</p>
             <input
               ref={fileInputRef}
               type="file"
@@ -181,7 +181,7 @@ export function CSVUploader({ onUploadSuccess, databases = [], onAddDatabase }: 
           <Button
             onClick={() => fileInputRef.current?.click()}
             disabled={isLoading}
-            className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             {isLoading ? 'Processing...' : 'Select CSV File'}
           </Button>

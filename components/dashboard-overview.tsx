@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PurchaseOrder } from "@/lib/types"
 import { BarChart3, Search, TrendingUp, Package, Building2, DollarSign, X } from 'lucide-react'
-import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts'
-import { Tooltip } from '@/components/ui/tooltip'
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface DashboardOverviewProps {
   approvedPOs: PurchaseOrder[]
@@ -99,7 +99,18 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
       .map(([name, value]) => ({ name, value }))
   }, [filteredPOs])
 
-  const COLORS = ['#f97316', '#fb923c', '#fdba74', '#fed7aa', '#22c55e', '#4ade80', '#86efac', '#bbf7d0']
+  const COLORS = [
+    '#3b82f6', // Blue
+    '#8b5cf6', // Purple
+    '#ec4899', // Pink
+    '#f97316', // Orange
+    '#22c55e', // Green
+    '#06b6d4', // Cyan
+    '#eab308', // Yellow
+    '#ef4444', // Red
+    '#14b8a6', // Teal
+    '#a855f7', // Violet
+  ]
 
   const clearFilters = () => {
     setSearchTerm("")
@@ -109,6 +120,52 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
   }
 
   const hasActiveFilters = searchTerm !== "" || selectedBranch !== "all" || selectedSupplier !== "all" || selectedCategory !== "all"
+
+  // Custom tick renderers with truncation
+  const renderXAxisTick = ({ x, y, payload }: any) => {
+    const maxLength = 10
+    const displayValue = payload.value.length > maxLength
+      ? `${payload.value.slice(0, maxLength)}...`
+      : payload.value
+
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <text
+          x={0}
+          y={0}
+          dy={16}
+          textAnchor="end"
+          fill="hsl(var(--muted-foreground))"
+          transform="rotate(-45)"
+          fontSize={10}
+        >
+          {displayValue}
+        </text>
+      </g>
+    )
+  }
+
+  const renderYAxisTick = ({ x, y, payload }: any) => {
+    const maxLength = 12
+    const displayValue = payload.value.length > maxLength
+      ? `${payload.value.slice(0, maxLength)}...`
+      : payload.value
+
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <text
+          x={0}
+          y={0}
+          dy={4}
+          textAnchor="end"
+          fill="hsl(var(--muted-foreground))"
+          fontSize={9}
+        >
+          {displayValue}
+        </text>
+      </g>
+    )
+  }
 
   const StatCard = ({ 
     label, 
@@ -183,7 +240,7 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
       <div className="bg-card/50 border border-border rounded-lg p-4" data-tour="dashboard-filters">
         <div className="flex flex-wrap items-center gap-3">
           {/* Search */}
-          <div className="relative flex-1 min-w-[200px]">
+          <div className="relative w-[300px] mr-8">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search items, suppliers, PO#..."
@@ -195,8 +252,10 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
 
           {/* Branch Filter */}
           <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-            <SelectTrigger className="w-[140px] bg-muted/50 border-border text-foreground h-9">
-              <SelectValue placeholder="Branch" />
+            <SelectTrigger className="w-[160px] bg-muted/50 border-border text-foreground h-9">
+              <SelectValue>
+                {selectedBranch === "all" ? "All Branches" : selectedBranch}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
               <SelectItem value="all">All Branches</SelectItem>
@@ -208,8 +267,10 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
 
           {/* Supplier Filter */}
           <Select value={selectedSupplier} onValueChange={setSelectedSupplier}>
-            <SelectTrigger className="w-[140px] bg-muted/50 border-border text-foreground h-9">
-              <SelectValue placeholder="Supplier" />
+            <SelectTrigger className="w-[160px] bg-muted/50 border-border text-foreground h-9">
+              <SelectValue>
+                {selectedSupplier === "all" ? "All Suppliers" : selectedSupplier}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
               <SelectItem value="all">All Suppliers</SelectItem>
@@ -221,8 +282,10 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
 
           {/* Category Filter */}
           <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-[140px] bg-muted/50 border-border text-foreground h-9">
-              <SelectValue placeholder="Category" />
+            <SelectTrigger className="w-[160px] bg-muted/50 border-border text-foreground h-9">
+              <SelectValue>
+                {selectedCategory === "all" ? "All Categories" : selectedCategory}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-card border-border">
               <SelectItem value="all">All Categories</SelectItem>
@@ -232,24 +295,30 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
             </SelectContent>
           </Select>
 
-          {/* Clear Filters Button - only show when filters are active */}
-          {hasActiveFilters && (
-            <Button 
-              onClick={clearFilters}
-              size="sm"
-              variant="ghost"
-              className="text-accent hover:bg-accent/10 hover:text-accent h-9"
-            >
-              <X className="w-4 h-4 mr-1" />
-              Clear
-            </Button>
-          )}
+          {/* Spacer for gap */}
+          <div className="flex-1"></div>
           
-          {/* Filtered Count Badge */}
-          <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="bg-accent/20 text-accent px-3 py-1 rounded-full font-mono">
-              {filteredPOs.length} / {approvedPOs.length}
-            </span>
+          {/* Right side buttons */}
+          <div className="flex items-center gap-2">
+            {/* Clear Filters Button - only show when filters are active */}
+            {hasActiveFilters && (
+              <Button 
+                onClick={clearFilters}
+                size="sm"
+                variant="ghost"
+                className="text-accent hover:bg-accent/10 hover:text-accent h-9"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Clear
+              </Button>
+            )}
+            
+            {/* Filtered Count Badge */}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="bg-accent/20 text-accent px-3 py-1 rounded-full font-mono">
+                {filteredPOs.length} / {approvedPOs.length}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -298,12 +367,27 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={branchData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" angle={-45} textAnchor="end" height={100} />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
-                {/* <Tooltip 
-                  contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
-                  labelStyle={{ color: 'hsl(var(--card-foreground))' }}
-                /> */}
+                <XAxis
+                  dataKey="name"
+                  stroke="hsl(var(--muted-foreground))"
+                  height={100}
+                  interval={0}
+                  tick={renderXAxisTick}
+                />
+                <YAxis
+                  stroke="hsl(var(--muted-foreground))"
+                  tick={{ fontSize: 10 }}
+                />
+                <RechartsTooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '6px',
+                    color: 'hsl(var(--card-foreground))'
+                  }}
+                  labelStyle={{ color: 'hsl(var(--card-foreground))', fontWeight: 'bold' }}
+                  formatter={(value: number) => [`৳${value.toLocaleString()}`, 'Amount']}
+                />
                 <Bar dataKey="value" fill="hsl(var(--accent))" />
               </BarChart>
             </ResponsiveContainer>
@@ -318,12 +402,28 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={supplierData} layout="horizontal">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis type="number" stroke="hsl(var(--muted-foreground))" />
-                <YAxis dataKey="name" type="category" stroke="hsl(var(--muted-foreground))" width={120} />
-                {/* <Tooltip 
-                  contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
-                  labelStyle={{ color: 'hsl(var(--card-foreground))' }}
-                /> */}
+                <XAxis
+                  type="number"
+                  stroke="hsl(var(--muted-foreground))"
+                  tick={{ fontSize: 10 }}
+                />
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  stroke="hsl(var(--muted-foreground))"
+                  width={100}
+                  tick={renderYAxisTick}
+                />
+                <RechartsTooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '6px',
+                    color: 'hsl(var(--card-foreground))'
+                  }}
+                  labelStyle={{ color: 'hsl(var(--card-foreground))', fontWeight: 'bold' }}
+                  formatter={(value: number) => [`৳${value.toLocaleString()}`, 'Amount']}
+                />
                 <Bar dataKey="value" fill="hsl(var(--accent))" />
               </BarChart>
             </ResponsiveContainer>
@@ -341,9 +441,7 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
                   data={categoryData}
                   cx="50%"
                   cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
-                  outerRadius={100}
+                  outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
                 >
@@ -351,10 +449,24 @@ export function DashboardOverview({ approvedPOs }: DashboardOverviewProps) {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                {/* <Tooltip 
-                  contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
+                <RechartsTooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '6px',
+                    color: 'hsl(var(--card-foreground))'
+                  }}
                   labelStyle={{ color: 'hsl(var(--card-foreground))' }}
-                /> */}
+                  itemStyle={{ color: 'hsl(var(--card-foreground))' }}
+                  formatter={(value: number) => [`৳${value.toLocaleString()}`, 'Amount']}
+                />
+                <Legend
+                  wrapperStyle={{
+                    fontSize: '11px',
+                    color: 'hsl(var(--foreground))'
+                  }}
+                  iconType="circle"
+                />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>

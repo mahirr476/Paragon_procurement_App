@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { validatePassword } from "@/lib/utils"
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,6 +15,14 @@ export async function POST(req: NextRequest) {
 
     if (existingUser) {
       return NextResponse.json({ success: false, error: "Email already registered" }, { status: 400 })
+    }
+
+    const passwordValidationResult = validatePassword(password)
+    if (!passwordValidationResult.isValid) {
+      return NextResponse.json(
+        { success: false, error: passwordValidationResult.errors.join(". ") },
+        { status: 400 }
+      )
     }
 
     const hashedPassword = await bcrypt.hash(password, 10)

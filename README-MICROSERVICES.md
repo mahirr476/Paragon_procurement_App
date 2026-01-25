@@ -32,7 +32,7 @@ The app now uses a microservice pattern with the following services:
 
 ### Prerequisites
 - Docker Desktop installed and running
-- No other services on ports 3000, 5433, or 5555
+- No other services on ports 3000, 5434, or 5555
 
 ### Step 1: Start the Containers
 
@@ -41,7 +41,7 @@ docker-compose up -d --build
 \`\`\`
 
 This starts:
-- PostgreSQL database (port 5433)
+- PostgreSQL database (port 5434)
 - Next.js application (port 3000)
 - Prisma Studio (port 5555)
 

@@ -6,7 +6,7 @@ A modern procurement management application built with Next.js, Prisma, and Post
 
 ### Prerequisites
 - Docker Desktop installed and running
-- No other services on ports 3000, 5433, or 5555
+- No other services on ports 3000, 5434, or 5555
 
 ### Setup Steps
 
@@ -97,7 +97,7 @@ npm run dev
 ## 🐛 Troubleshooting
 
 **Port conflicts:**
-- Change ports in `docker-compose.yml` if 3000, 5433, or 5555 are already in use
+- Change ports in `docker-compose.yml` if 3000, 5434, or 5555 are already in use
 
 **Database connection issues:**
 - Ensure the `db` service is healthy: `docker-compose ps`

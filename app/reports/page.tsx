@@ -269,7 +269,7 @@ export default function ReportsPage() {
             variant="outline"
             size="sm"
             onClick={() => setShowSettings(!showSettings)}
-            className="gap-2"
+            className="gap-2 border-accent text-accent hover:bg-accent/10 hover:text-accent"
           >
             <Settings2 className="w-4 h-4" />
             {showSettings ? 'Hide' : 'Show'} Settings
@@ -349,7 +349,7 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0 pr-2">
                 <p className="text-muted-foreground text-xs mb-1">Total Spend</p>
-                <p className="text-xl font-bold text-foreground truncate">₹{(totalSpend / 100000).toFixed(2)}L</p>
+                <p className="text-xl font-bold text-foreground truncate">৳{(totalSpend / 100000).toFixed(2)}L</p>
               </div>
               <DollarSign className="w-8 h-8 text-accent flex-shrink-0" />
             </div>
@@ -369,7 +369,7 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0 pr-2">
                 <p className="text-muted-foreground text-xs mb-1">Avg PO Value</p>
-                <p className="text-xl font-bold text-foreground truncate">₹{(avgPOValue.current / 1000).toFixed(1)}K</p>
+                <p className="text-xl font-bold text-foreground truncate">৳{(avgPOValue.current / 1000).toFixed(1)}K</p>
                 <p className={`text-xs ${avgPOValue.trend >= 0 ? "text-green-500" : "text-red-500"}`}>
                   {avgPOValue.trend >= 0 ? "+" : ""}
                   {avgPOValue.trend.toFixed(1)}%
@@ -408,7 +408,7 @@ export default function ReportsPage() {
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0 pr-2">
                 <p className="text-muted-foreground text-xs mb-1">Avg Monthly Spending</p>
-                <p className="text-xl font-bold text-foreground">₹{(avgMonthlyAmount / 100000).toFixed(1)}L</p>
+                <p className="text-xl font-bold text-foreground">৳{(avgMonthlyAmount / 100000).toFixed(1)}L</p>
               </div>
               <TrendingUp className="w-8 h-8 text-emerald-500 flex-shrink-0" />
             </div>
@@ -451,7 +451,7 @@ export default function ReportsPage() {
                   <YAxis dataKey="branch" type="category" stroke="hsl(var(--muted-foreground))" style={{ fontSize: '10px' }} width={100} />
                   <Tooltip
                     contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
-                    formatter={(value: any) => `₹${(value / 100000).toFixed(2)}L`}
+                    formatter={(value: any) => `৳${(value / 100000).toFixed(2)}L`}
                   />
                   <Bar dataKey="spending" fill="#3b82f6" radius={[0, 4, 4, 0]} />
                 </BarChart>
@@ -466,16 +466,16 @@ export default function ReportsPage() {
                 <BarChart data={categorySpending}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="category" stroke="hsl(var(--muted-foreground))" style={{ fontSize: '11px' }} angle={-45} textAnchor="end" height={100} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '10px' }} />
                   <Tooltip
                     contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
                     formatter={(value: any, name: string) => {
-                      if (name === 'spending') return [`₹${(value / 100000).toFixed(2)}L`, 'Total Spending']
+                      if (name === 'spending') return [`৳${(value / 100000).toFixed(2)}L`, 'Total Spending']
                       return [value, 'Orders']
                     }}
                   />
                   <Legend />
-                  <Bar dataKey="spending" fill="hsl(var(--accent))" name="Spending (₹)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="spending" fill="hsl(var(--accent))" name="Spending (৳)" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="orders" fill="#10b981" name="Order Count" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -487,28 +487,27 @@ export default function ReportsPage() {
       {/* Supplier Performance */}
       {viewVisibility.supplierPerformance && (
         <div className="space-y-4">
-          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-green-500" />
-            Supplier Performance
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-green-500" />
+              Supplier Performance
+            </h2>
+            <Select value={supplierCategory} onValueChange={setSupplierCategory}>
+              <SelectTrigger className="w-[140px] h-9 text-xs">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <Card className="bg-card border-border p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-foreground">Supplier Metrics Overview</h3>
-              <Select value={supplierCategory} onValueChange={setSupplierCategory}>
-                <SelectTrigger className="w-[140px] h-8 text-xs">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -566,10 +565,10 @@ export default function ReportsPage() {
                 <BarChart data={monthlyTrends}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" style={{ fontSize: '11px' }} angle={-45} textAnchor="end" height={80} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '10px' }} />
                   <Tooltip
                     contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
-                    formatter={(value: any) => `₹${(value / 100000).toFixed(2)}L`}
+                    formatter={(value: any) => `৳${(value / 100000).toFixed(2)}L`}
                   />
                   <Bar dataKey="totalAmount" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -616,7 +615,7 @@ export default function ReportsPage() {
               <LineChart data={spendTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="period" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" />
+                <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '10px' }} />
                 <Tooltip formatter={(value: number) => `₹${(value / 1000).toFixed(2)}K`} />
                 <Legend />
                 <Line type="monotone" dataKey="amount" stroke="hsl(var(--accent))" strokeWidth={2} name="Spending" />
@@ -659,7 +658,7 @@ export default function ReportsPage() {
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-foreground text-sm">{risk.supplier}</span>
                       <span className="text-muted-foreground text-xs">
-                        ₹{(risk.totalSpend / 1000).toFixed(1)}K ({risk.concentration.toFixed(1)}%)
+                        ৳{(risk.totalSpend / 1000).toFixed(1)}K ({risk.concentration.toFixed(1)}%)
                       </span>
                     </div>
                     <div className="w-full bg-card-hover rounded-full h-2">
@@ -703,7 +702,7 @@ export default function ReportsPage() {
                         </p>
                       </div>
                       <div className="text-right ml-4">
-                        <p className="text-sm font-mono text-accent">₹{(supplier.totalAmount / 100000).toFixed(1)}L</p>
+                        <p className="text-sm font-mono text-accent">৳{(supplier.totalAmount / 100000).toFixed(1)}L</p>
                         <p className={`text-xs ${!isFinite(supplier.rateVolatility) ? 'text-muted-foreground' : supplier.rateVolatility > 0.15 ? 'text-red-400' : 'text-green-400'}`}>
                           Vol: {isFinite(supplier.rateVolatility) ? `${(supplier.rateVolatility * 100).toFixed(1)}%` : 'N/A'}
                         </p>
@@ -741,31 +740,27 @@ export default function ReportsPage() {
       {/* Detected Anomalies */}
       {viewVisibility.anomalies && anomalies.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5 text-orange-500" />
-            Detected Anomalies
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-orange-500" />
+              Detected Anomalies
+            </h2>
+            <Select value={anomalyCategory} onValueChange={setAnomalyCategory}>
+              <SelectTrigger className="w-[140px] h-9 text-xs">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <Card className="bg-card border-border p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-orange-500" />
-                DETECTED ANOMALIES ({anomalies.length})
-              </h3>
-              <Select value={anomalyCategory} onValueChange={setAnomalyCategory}>
-                <SelectTrigger className="w-[140px] h-8 text-xs">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {anomalies.map((anomaly, idx) => (
                 <div

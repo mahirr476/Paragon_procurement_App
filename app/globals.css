@@ -75,6 +75,16 @@
     --icon-cyan: 187 85% 53%;
     --icon-yellow: 43 96% 56%;
     
+    /* Sidebar Variables */
+    --sidebar-background: 240 10% 8%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 24 100% 50%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 10% 14%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 240 10% 18%;
+    --sidebar-ring: 24 100% 50%;
+    
     --radius: 0.5rem;
   }
 
@@ -109,6 +119,24 @@
     --chart-3: 158 64% 52%;
     --chart-4: 200 98% 39%;
     --chart-5: 205 100% 70%;
+    
+    /* Icon Color Variations - Midnight Theme */
+    --icon-orange: 24 100% 50%;
+    --icon-blue: 217 91% 60%;
+    --icon-green: 142 76% 36%;
+    --icon-purple: 280 65% 60%;
+    --icon-cyan: 187 85% 53%;
+    --icon-yellow: 43 96% 56%;
+    
+    /* Sidebar Variables */
+    --sidebar-background: 220 15% 10%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 16%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 220 15% 20%;
+    --sidebar-ring: 217 91% 60%;
   }
 
   /* Forest Green Theme */
@@ -142,6 +170,24 @@
     --chart-3: 173 58% 39%;
     --chart-4: 122 39% 49%;
     --chart-5: 95 60% 45%;
+    
+    /* Icon Color Variations - Forest Theme */
+    --icon-orange: 24 100% 50%;
+    --icon-blue: 217 91% 60%;
+    --icon-green: 142 76% 36%;
+    --icon-purple: 280 65% 60%;
+    --icon-cyan: 187 85% 53%;
+    --icon-yellow: 43 96% 56%;
+    
+    /* Sidebar Variables */
+    --sidebar-background: 150 20% 10%;
+    --sidebar-foreground: 144 20% 98%;
+    --sidebar-primary: 142 76% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 150 20% 16%;
+    --sidebar-accent-foreground: 144 20% 98%;
+    --sidebar-border: 150 20% 20%;
+    --sidebar-ring: 142 76% 36%;
   }
 
   /* Sunset Purple/Pink Theme */
@@ -175,6 +221,24 @@
     --chart-3: 320 85% 65%;
     --chart-4: 340 82% 67%;
     --chart-5: 350 89% 60%;
+    
+    /* Icon Color Variations - Sunset Theme */
+    --icon-orange: 24 100% 50%;
+    --icon-blue: 217 91% 60%;
+    --icon-green: 142 76% 36%;
+    --icon-purple: 300 76% 60%;
+    --icon-cyan: 187 85% 53%;
+    --icon-yellow: 43 96% 56%;
+    
+    /* Sidebar Variables */
+    --sidebar-background: 280 20% 10%;
+    --sidebar-foreground: 280 10% 98%;
+    --sidebar-primary: 300 76% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 280 20% 16%;
+    --sidebar-accent-foreground: 280 10% 98%;
+    --sidebar-border: 280 20% 20%;
+    --sidebar-ring: 300 76% 60%;
   }
 
   /* Arctic Cyan Theme */
@@ -208,6 +272,24 @@
     --chart-3: 173 58% 39%;
     --chart-4: 197 71% 73%;
     --chart-5: 166 76% 37%;
+    
+    /* Icon Color Variations - Arctic Theme */
+    --icon-orange: 24 100% 50%;
+    --icon-blue: 217 91% 60%;
+    --icon-green: 142 76% 36%;
+    --icon-purple: 280 65% 60%;
+    --icon-cyan: 187 85% 53%;
+    --icon-yellow: 43 96% 56%;
+    
+    /* Sidebar Variables */
+    --sidebar-background: 190 20% 10%;
+    --sidebar-foreground: 190 10% 98%;
+    --sidebar-primary: 187 85% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 190 20% 16%;
+    --sidebar-accent-foreground: 190 10% 98%;
+    --sidebar-border: 190 20% 20%;
+    --sidebar-ring: 187 85% 53%;
   }
 
   /* Monochrome Dark Theme */
@@ -241,6 +323,24 @@
     --chart-3: 0 0% 40%;
     --chart-4: 0 0% 85%;
     --chart-5: 0 0% 25%;
+    
+    /* Icon Color Variations - Monochrome Dark Theme */
+    --icon-orange: 0 0% 70%;
+    --icon-blue: 0 0% 65%;
+    --icon-green: 0 0% 60%;
+    --icon-purple: 0 0% 75%;
+    --icon-cyan: 0 0% 55%;
+    --icon-yellow: 0 0% 80%;
+    
+    /* Sidebar Variables */
+    --sidebar-background: 0 0% 12%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 0 0% 80%;
+    --sidebar-primary-foreground: 0 0% 10%;
+    --sidebar-accent: 0 0% 16%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 22%;
+    --sidebar-ring: 0 0% 80%;
   }
 
   /* Monochrome Light Theme */
@@ -274,6 +374,24 @@
     --chart-3: 0 0% 60%;
     --chart-4: 0 0% 15%;
     --chart-5: 0 0% 75%;
+    
+    /* Icon Color Variations - Monochrome Light Theme */
+    --icon-orange: 0 0% 30%;
+    --icon-blue: 0 0% 35%;
+    --icon-green: 0 0% 40%;
+    --icon-purple: 0 0% 25%;
+    --icon-cyan: 0 0% 45%;
+    --icon-yellow: 0 0% 20%;
+    
+    /* Sidebar Variables */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 10%;
+    --sidebar-primary: 0 0% 25%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 0 0% 92%;
+    --sidebar-accent-foreground: 0 0% 15%;
+    --sidebar-border: 0 0% 85%;
+    --sidebar-ring: 0 0% 25%;
   }
 
   /* Light Theme */
@@ -307,6 +425,24 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    
+    /* Icon Color Variations - Light Theme */
+    --icon-orange: 24 100% 50%;
+    --icon-blue: 217 91% 60%;
+    --icon-green: 142 76% 36%;
+    --icon-purple: 280 65% 60%;
+    --icon-cyan: 187 85% 53%;
+    --icon-yellow: 43 96% 56%;
+    
+    /* Sidebar Variables */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222.2 84% 4.9%;
+    --sidebar-primary: 24 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 96.1%;
+    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-ring: 24 100% 50%;
   }
 
   /* Warm Light Theme */
@@ -340,6 +476,24 @@
     --chart-3: 35 85% 45%;
     --chart-4: 20 90% 48%;
     --chart-5: 10 80% 55%;
+    
+    /* Icon Color Variations - Warm Light Theme */
+    --icon-orange: 27 87% 50%;
+    --icon-blue: 217 91% 50%;
+    --icon-green: 142 76% 36%;
+    --icon-purple: 280 65% 50%;
+    --icon-cyan: 187 85% 45%;
+    --icon-yellow: 43 96% 56%;
+    
+    /* Sidebar Variables */
+    --sidebar-background: 30 20% 96%;
+    --sidebar-foreground: 30 30% 10%;
+    --sidebar-primary: 27 87% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 30 20% 92%;
+    --sidebar-accent-foreground: 30 30% 15%;
+    --sidebar-border: 30 20% 85%;
+    --sidebar-ring: 27 87% 50%;
   }
 
   /* Cool Light Theme */
@@ -373,6 +527,24 @@
     --chart-3: 200 98% 35%;
     --chart-4: 205 100% 60%;
     --chart-5: 195 70% 50%;
+    
+    /* Icon Color Variations - Cool Light Theme */
+    --icon-orange: 24 100% 50%;
+    --icon-blue: 217 91% 50%;
+    --icon-green: 142 76% 36%;
+    --icon-purple: 280 65% 50%;
+    --icon-cyan: 187 85% 45%;
+    --icon-yellow: 43 96% 56%;
+    
+    /* Sidebar Variables */
+    --sidebar-background: 210 35% 96%;
+    --sidebar-foreground: 222.2 84% 10%;
+    --sidebar-primary: 217 91% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 35% 92%;
+    --sidebar-accent-foreground: 222.2 47.4% 15%;
+    --sidebar-border: 214.3 31.8% 85%;
+    --sidebar-ring: 217 91% 50%;
   }
 }
 
