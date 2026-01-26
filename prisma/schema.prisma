@@ -61,6 +61,42 @@ model PurchaseOrder {
   @@map("purchase_orders")
 }
 
+model PendingPO {
+  id                String   @id @default(cuid())
+  date              String
+  supplier          String
+  orderNo           String   @map("order_no")  // Remove @unique from here
+  refNo             String   @map("ref_no")
+  dueDate           String   @map("due_date")
+  branch            String
+  requisitionType   String   @map("requisition_type")
+  itemLedgerGroup   String   @map("item_ledger_group")
+  item              String
+  minQty            Float    @map("min_qty")
+  maxQty            Float    @map("max_qty")
+  unit              String
+  rate              Float
+  lastApprovedRate  Float    @map("last_approved_rate")
+  lastSupplier      String   @map("last_supplier")
+  totalAmount       Float    @map("total_amount")
+  status            String
+  deliveryType      String   @map("delivery_type")
+  
+  // API specific fields
+  approvalLevel     String   @map("approval_level")
+  empId             String   @map("emp_id")
+  
+  // Metadata
+  fetchedAt         DateTime @default(now()) @map("fetched_at")
+  isProcessed       Boolean  @default(false) @map("is_processed")
+  
+  @@map("pending_pos")
+  @@unique([orderNo, item])  // Combination of orderNo AND item must be unique
+  @@index([orderNo])
+  @@index([status])
+  @@index([isProcessed])
+}
+
 model ChatSession {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
