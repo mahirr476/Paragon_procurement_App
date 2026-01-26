@@ -120,66 +120,41 @@ export async function GET(request: NextRequest) {
     
     console.log("[Pending PO API] ✅ SUCCESS! Found", poData.length, "POs")
     
-    // Save to database
+    // Save to database - Save ALL data (including duplicates)
     try {
       console.log("[Pending PO API] Saving to database...")
       
-      for (const po of poData) {
-        await prisma.pendingPO.upsert({
-          where: { 
-            orderNo_item: {  // Use the combined unique constraint
-              orderNo: po.OrderNo,
-              item: po.Item
-            }
-          },
-          update: {
-            date: po.Date,
-            supplier: po.Supplier,
-            refNo: po.RefNo || "",
-            dueDate: po.DueDate,
-            branch: po.Branch,
-            requisitionType: po.RequisitionType,
-            itemLedgerGroup: po.ItemOrLedgerGroup,
-            item: po.Item,
-            minQty: parseFloat(po.MinQty) || 0,
-            maxQty: parseFloat(po.MaxQty) || 0,
-            unit: po.Unit,
-            rate: parseFloat(po.Rate) || 0,
-            lastApprovedRate: parseFloat(po.LastApprovedRate) || 0,
-            lastSupplier: po.LastSupplier || "",
-            totalAmount: parseFloat(po.TotalAmount) || 0,
-            status: po.Status || "pending",
-            deliveryType: po.DeliveryType,
-            approvalLevel: approvalLevel,
-            empId: empId,
-            isProcessed: false,
-          },
-          create: {
-            orderNo: po.OrderNo,
-            date: po.Date,
-            supplier: po.Supplier,
-            refNo: po.RefNo || "",
-            dueDate: po.DueDate,
-            branch: po.Branch,
-            requisitionType: po.RequisitionType,
-            itemLedgerGroup: po.ItemOrLedgerGroup,
-            item: po.Item,
-            minQty: parseFloat(po.MinQty) || 0,
-            maxQty: parseFloat(po.MaxQty) || 0,
-            unit: po.Unit,
-            rate: parseFloat(po.Rate) || 0,
-            lastApprovedRate: parseFloat(po.LastApprovedRate) || 0,
-            lastSupplier: po.LastSupplier || "",
-            totalAmount: parseFloat(po.TotalAmount) || 0,
-            status: po.Status || "pending",
-            deliveryType: po.DeliveryType,
-            approvalLevel: approvalLevel,
-            empId: empId,
-          },
-        })
-      }
+      // Prepare all records for batch insert
+      const recordsToSave = poData.map((po) => ({
+        orderNo: po.OrderNo,
+        date: po.Date,
+        supplier: po.Supplier,
+        refNo: po.RefNo || "",
+        dueDate: po.DueDate,
+        branch: po.Branch,
+        requisitionType: po.RequisitionType,
+        itemLedgerGroup: po.ItemOrLedgerGroup,
+        item: po.Item,
+        minQty: parseFloat(po.MinQty) || 0,
+        maxQty: parseFloat(po.MaxQty) || 0,
+        unit: po.Unit,
+        rate: parseFloat(po.Rate) || 0,
+        lastApprovedRate: parseFloat(po.LastApprovedRate) || 0,
+        lastSupplier: po.LastSupplier || "",
+        totalAmount: parseFloat(po.TotalAmount) || 0,
+        status: po.Status || "pending",
+        deliveryType: po.DeliveryType,
+        approvalLevel: approvalLevel,
+        empId: empId,
+      }))
       
-      console.log("[Pending PO API] ✅ Saved", poData.length, "POs to database")
+      // Use createMany to save all records (including duplicates)
+      // Since we removed the unique constraint, all records will be saved
+      const result = await prisma.pendingPO.createMany({
+        data: recordsToSave,
+      })
+      
+      console.log("[Pending PO API] ✅ Saved", result.count, "out of", poData.length, "POs to database")
     } catch (dbError) {
       console.error("[Pending PO API] ❌ Database save error:", dbError)
       // Continue anyway - return API data even if DB save fails

@@ -91,7 +91,6 @@ model PendingPO {
   isProcessed       Boolean  @default(false) @map("is_processed")
   
   @@map("pending_pos")
-  @@unique([orderNo, item])  // Combination of orderNo AND item must be unique
   @@index([orderNo])
   @@index([status])
   @@index([isProcessed])
