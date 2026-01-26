@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ChevronRight, Settings, BarChart3, Zap, Database, Upload } from "lucide-react"
+import { ChevronRight, Settings, BarChart3, Zap, Database, Clock, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DashboardOverview } from "@/components/dashboard-overview"
 import { ProfileDropdown } from "@/components/profile-dropdown"
 import { NotificationBell } from "@/components/notification-bell"
 import { ThemeToggle } from "@/components/theme-toggle"
-import UploadPage from "./upload/page"
+import PendingPOPage from "./pending-po/page"
+import ApprovalPOPage from "./approval-po/page"
 import IntelligencePage from "./intelligence/page"
 import SystemsPage from "./systems/page"
 import ReportsPage from "./reports/page"
@@ -20,7 +21,7 @@ import { SkipTutorialsDialog } from "@/components/skip-tutorials-dialog"
 
 export const dynamic = "force-dynamic"
 
-const VALID_SECTIONS = ["overview", "upload", "reports", "intelligence", "systems"]
+const VALID_SECTIONS = ["overview", "pending-po", "approval-po", "reports", "intelligence", "systems"]
 
 export default function TacticalDashboard() {
   const router = useRouter()
@@ -250,7 +251,7 @@ export default function TacticalDashboard() {
         position: "top",
       },
     ],
-    upload: [
+    "pending-po": [
       {
         target: '[data-tour="upload-csv"]',
         title: "Upload CSV Files",
@@ -389,7 +390,8 @@ export default function TacticalDashboard() {
           <nav className={`space-y-2 ${sidebarCollapsed ? "px-0" : ""}`}>
             {[
               { id: "overview", icon: Database, label: "DASHBOARD" },
-              { id: "upload", icon: Upload, label: "UPLOAD" },
+              { id: "pending-po", icon: Clock, label: "PENDING PO" },
+              { id: "approval-po", icon: CheckCircle, label: "APPROVAL PO" },
               { id: "reports", icon: BarChart3, label: "REPORTS" },
               { id: "intelligence", icon: Zap, label: "AI ANALYSIS" },
               { id: "systems", icon: Settings, label: "SETTINGS" },
@@ -457,7 +459,8 @@ export default function TacticalDashboard() {
         {/* Dashboard Content */}
         <div className="flex-1 overflow-auto pl-2 md:pl-0">
           {activeSection === "overview" && <DashboardOverview approvedPOs={approvedPOs} />}
-          {activeSection === "upload" && <UploadPage />}
+          {activeSection === "pending-po" && <PendingPOPage />}
+          {activeSection === "approval-po" && <ApprovalPOPage />}
           {activeSection === "reports" && <ReportsPage />}
           {activeSection === "intelligence" && <IntelligencePage />}
           {activeSection === "systems" && <SystemsPage />}
