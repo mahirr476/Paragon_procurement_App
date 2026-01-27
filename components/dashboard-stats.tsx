@@ -9,6 +9,7 @@ import { Tooltip } from '@/components/ui/tooltip'
 interface DashboardStatsProps {
   currentPOs: PurchaseOrder[]
   approvedPOs: PurchaseOrder[]
+  showPending?: boolean // Whether to show pending approval count
 }
 
 interface StatCardProps {
@@ -18,23 +19,27 @@ interface StatCardProps {
   unit?: string
 }
 
-export function DashboardStats({ currentPOs, approvedPOs }: DashboardStatsProps) {
+export function DashboardStats({ currentPOs, approvedPOs, showPending = true }: DashboardStatsProps) {
   const stats = useMemo(() => {
-    const total = currentPOs.length
-    const amount = currentPOs.reduce((sum, po) => sum + po.totalAmount, 0)
+    // Use approvedPOs if currentPOs is empty (for Approval PO page)
+    const posToUse = currentPOs.length > 0 ? currentPOs : approvedPOs
+    
+    const total = posToUse.length
+    const amount = posToUse.reduce((sum, po) => sum + po.totalAmount, 0)
     const avgValue = total > 0 ? amount / total : 0
-    const suppliers = new Set(currentPOs.map(po => po.supplier)).size
-    const branches = new Set(currentPOs.map(po => po.branch)).size
+    const suppliers = new Set(posToUse.map(po => po.supplier)).size
+    const branches = new Set(posToUse.map(po => po.branch)).size
 
     return {
       totalPOs: total,
       totalAmount: amount,
       averageOrderValue: avgValue,
       uniqueSuppliers: suppliers,
-      pendingApproval: currentPOs.filter(po => !po.isApproved).length,
+      pendingApproval: currentPOs.length > 0 ? currentPOs.filter(po => !po.isApproved).length : 0,
+      approvedCount: approvedPOs.length,
       uniqueBranches: branches,
     }
-  }, [currentPOs])
+  }, [currentPOs, approvedPOs])
 
   const StatCard = ({ label, value, icon: Icon, unit = '' }: StatCardProps) => {
     const [isTruncated, setIsTruncated] = useState(false)
@@ -91,7 +96,11 @@ export function DashboardStats({ currentPOs, approvedPOs }: DashboardStatsProps)
       <StatCard label="AVG VALUE" value={Math.round(stats.averageOrderValue).toLocaleString()} icon={TrendingUp} unit="৳" />
       <StatCard label="SUPPLIERS" value={stats.uniqueSuppliers} icon={Users} />
       <StatCard label="BRANCHES" value={stats.uniqueBranches} icon={Building2} />
-      <StatCard label="PENDING" value={stats.pendingApproval} icon={Package} />
+      {showPending ? (
+        <StatCard label="PENDING" value={stats.pendingApproval} icon={Package} />
+      ) : (
+        <StatCard label="APPROVED" value={stats.approvedCount} icon={Package} />
+      )}
     </div>
   )
 }

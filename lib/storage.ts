@@ -24,9 +24,45 @@ export async function saveApprovedPOs(pos: PurchaseOrder[]) {
 
 export async function getApprovedPOs(): Promise<PurchaseOrder[]> {
   if (typeof window === "undefined") return []
-  const response = await fetch(getApiUrl("/api/pos?approved=true"))
+  // Fetch from ApprovalPO database instead of PurchaseOrder
+  const response = await fetch(getApiUrl("/api/approval-pos"))
   const data = await response.json()
-  return data.success ? data.pos : []
+  if (data.success && Array.isArray(data.pos)) {
+    // Convert ApprovalPO format to PurchaseOrder format for compatibility
+    return data.pos.map((po: any) => ({
+      id: po.id,
+      date: po.date,
+      supplier: po.supplier,
+      orderNo: po.orderNo,
+      refNo: po.refNo,
+      dueDate: po.dueDate,
+      branch: po.branch,
+      requisitionType: po.requisitionType,
+      itemLedgerGroup: po.itemLedgerGroup,
+      item: po.item,
+      minQty: po.minQty,
+      maxQty: po.maxQty,
+      unit: po.unit,
+      rate: po.rate,
+      deliveryDate: po.deliveryDate,
+      cgst: po.cgst,
+      sgst: po.sgst,
+      igst: po.igst,
+      vat: po.vat,
+      lastApprovedRate: po.lastApprovedRate,
+      lastSupplier: po.lastSupplier,
+      broker: po.broker,
+      totalAmount: po.totalAmount,
+      status: po.status || "approved",
+      deliveryType: po.deliveryType,
+      openPO: po.openPO,
+      openPONo: po.openPONo,
+      uploadedAt: po.approvedAt ? new Date(po.approvedAt).toISOString() : new Date().toISOString(),
+      isApproved: true,
+      approvalNotes: po.approvalNotes,
+    }))
+  }
+  return []
 }
 
 export async function saveCurrentPOs(pos: PurchaseOrder[]) {
@@ -49,17 +85,20 @@ export async function getCurrentPOs(): Promise<PurchaseOrder[]> {
 export async function addToApprovedPOs(pos: PurchaseOrder[]) {
   if (typeof window === "undefined") return { success: false }
   
-  // Update existing POs to set isApproved: true instead of creating duplicates
-  const poIds = pos.map(po => po.id)
-  const response = await fetch(getApiUrl("/api/pos"), {
-    method: "PUT",
+  // Save to ApprovalPO database
+  const response = await fetch(getApiUrl("/api/approval-pos"), {
+    method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ 
-      poIds,
-      updates: { isApproved: true }
-    }),
+    body: JSON.stringify({ pos }),
   })
   return response.json()
+}
+
+export async function getApprovalPOs(): Promise<PurchaseOrder[]> {
+  if (typeof window === "undefined") return []
+  const response = await fetch(getApiUrl("/api/approval-pos"))
+  const data = await response.json()
+  return data.success ? data.pos : []
 }
 
 export async function clearCurrentPOs() {

@@ -293,9 +293,9 @@ export function AnalysisDetailPanel({ po, issues, onClose, onResolve }: Analysis
             <p className="text-xs text-neutral-400">
               Mark issues as resolved if you've verified this purchase order is correct.
             </p>
-            {issues.map((issue) => (
+            {issues.map((issue, idx) => (
               <Button
-                key={issue.poId}
+                key={`${issue.poId}-${issue.type}-${idx}`}
                 onClick={() => onResolve(issue.poId)}
                 className="w-full bg-green-600 hover:bg-green-700 text-white"
               >

@@ -199,25 +199,10 @@ export default function ApprovalPOPage() {
   const fetchApprovedPOs = async () => {
     setIsLoading(true)
     try {
+      // Now fetching directly from ApprovalPO database
       const pos = await getApprovedPOs()
-      const filtered = Array.isArray(pos) 
-        ? pos.filter((po: PurchaseOrder) => {
-            if (po.isApproved !== true) return false
-            if (po.status?.toLowerCase() !== "approved") return false
-            if (!po.uploadedAt) return false
-            
-            try {
-              const uploadedDate = new Date(po.uploadedAt)
-              const daysSinceUpload = (Date.now() - uploadedDate.getTime()) / (1000 * 60 * 60 * 24)
-              if (daysSinceUpload > 30) return false
-            } catch {
-              return false
-            }
-            
-            return true
-          }) 
-        : []
-      setApprovedPOs(filtered)
+      // All data from ApprovalPO table is already approved, so no filtering needed
+      setApprovedPOs(Array.isArray(pos) ? pos : [])
     } catch (error) {
       console.error("Error fetching approved POs:", error)
       setApprovedPOs([])
@@ -270,7 +255,7 @@ export default function ApprovalPOPage() {
         </Button>
       </div>
 
-      {approvedPOs.length > 0 && <DashboardStats currentPOs={[]} approvedPOs={approvedPOs} />}
+      {approvedPOs.length > 0 && <DashboardStats currentPOs={[]} approvedPOs={approvedPOs} showPending={false} />}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1 space-y-4">
@@ -329,6 +314,7 @@ export default function ApprovalPOPage() {
               approvedPOs={approvedPOs}
               onApprove={undefined}
               onDelete={undefined}
+              isReadOnly={true}
             />
           )}
         </div>

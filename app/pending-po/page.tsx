@@ -714,7 +714,17 @@ export default function PendingPOPage() {
         )
         console.log("[Pending PO Page] Converted", convertedPOs.length, "POs")
         setPendingPOs(convertedPOs)
-        setLastFetchTime(new Date())
+        const fetchTime = new Date()
+        setLastFetchTime(fetchTime)
+        
+        // Cache the data in sessionStorage (persists across page navigation)
+        try {
+          sessionStorage.setItem("pendingPOs_cache", JSON.stringify(convertedPOs))
+          sessionStorage.setItem("pendingPOs_cache_time", fetchTime.getTime().toString())
+          console.log("[Pending PO Page] Data cached successfully")
+        } catch (error) {
+          console.error("[Pending PO Page] Error caching data:", error)
+        }
       } else {
         console.warn("[Pending PO Page] No data or invalid response:", result)
         setPendingPOs([])
@@ -750,7 +760,13 @@ export default function PendingPOPage() {
       }
 
       // Remove approved POs from pending list
-      setPendingPOs((prev: PurchaseOrder[]) => prev.filter((po: PurchaseOrder) => !poIds.includes(po.id)))
+      setPendingPOs((prev: PurchaseOrder[]) => {
+        const updatedPendingPOs = prev.filter((po: PurchaseOrder) => !poIds.includes(po.id))
+        // Update cache
+        sessionStorage.setItem("pendingPOs_cache", JSON.stringify(updatedPendingPOs))
+        sessionStorage.setItem("pendingPOs_cache_time", Date.now().toString())
+        return updatedPendingPOs
+      })
 
       // Reload approved POs
       const approved = await getApprovedPOs()
@@ -772,7 +788,13 @@ export default function PendingPOPage() {
   const handleDeleteSelected = async (poIds: string[]) => {
     if (activeTab === "api") {
       // Remove from pending list (not deleting from API, just from local state)
-      setPendingPOs((prev: PurchaseOrder[]) => prev.filter((po: PurchaseOrder) => !poIds.includes(po.id)))
+      setPendingPOs((prev: PurchaseOrder[]) => {
+        const updatedPendingPOs = prev.filter((po: PurchaseOrder) => !poIds.includes(po.id))
+        // Update cache
+        sessionStorage.setItem("pendingPOs_cache", JSON.stringify(updatedPendingPOs))
+        sessionStorage.setItem("pendingPOs_cache_time", Date.now().toString())
+        return updatedPendingPOs
+      })
     } else {
       // CSV tab - delete from current POs
       try {
@@ -848,8 +870,37 @@ export default function PendingPOPage() {
   }
 
   useEffect(() => {
-    // Load API pending POs
-    fetchPendingPOs()
+    // Check if we have cached data in sessionStorage
+    // Always load from cache if available (no expiration check)
+    const cachedData = sessionStorage.getItem("pendingPOs_cache")
+    const cacheTimestamp = sessionStorage.getItem("pendingPOs_cache_time")
+    
+    if (cachedData) {
+      try {
+        const parsedData = JSON.parse(cachedData)
+        console.log("[Pending PO Page] Loading from cache, count:", parsedData.length)
+        setPendingPOs(parsedData)
+        setIsLoading(false)
+        
+        // Set last fetch time from cache if available
+        if (cacheTimestamp) {
+          const cacheTime = parseInt(cacheTimestamp, 10)
+          if (!isNaN(cacheTime)) {
+            setLastFetchTime(new Date(cacheTime))
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing cached data:", error)
+        setIsLoading(false)
+        // Clear corrupted cache
+        sessionStorage.removeItem("pendingPOs_cache")
+        sessionStorage.removeItem("pendingPOs_cache_time")
+      }
+    } else {
+      // No cache - data will be empty, user can click refresh
+      console.log("[Pending PO Page] No cache found")
+      setIsLoading(false)
+    }
 
     // Load approved POs
     const loadApproved = async () => {

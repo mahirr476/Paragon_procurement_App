@@ -17,6 +17,7 @@ interface POComparisonProps {
   approvedPOs: PurchaseOrder[]
   onApprove?: (poIds: string[]) => void
   onDelete?: (poIds: string[]) => void
+  isReadOnly?: boolean // For approved PO view - hides approve buttons and issues
 }
 
 interface POGroup {
@@ -26,7 +27,7 @@ interface POGroup {
   pos: PurchaseOrder[]
 }
 
-export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onDelete }: POComparisonProps) {
+export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onDelete, isReadOnly = false }: POComparisonProps) {
   const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null)
   const [resolvedIssues, setResolvedIssues] = useState<Set<string>>(new Set())
   const [selectedBranch, setSelectedBranch] = useState<string>("all")
@@ -226,10 +227,12 @@ export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onD
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-4" data-tour="upload-actions">
-              <Checkbox checked={allSelected} onCheckedChange={handleSelectAll} className="border-border" />
+              {!isReadOnly && (
+                <Checkbox checked={allSelected} onCheckedChange={handleSelectAll} className="border-border" />
+              )}
               <CardTitle className="text-sm font-medium text-muted-foreground tracking-wider">
-                UPLOADED PURCHASE ORDERS ({filteredPOs.length})
-                {selectedPOIds.size > 0 && <span className="ml-2 text-primary">{selectedPOIds.size} selected</span>}
+                {isReadOnly ? "APPROVED PURCHASE ORDERS" : "UPLOADED PURCHASE ORDERS"} ({filteredPOs.length})
+                {!isReadOnly && selectedPOIds.size > 0 && <span className="ml-2 text-primary">{selectedPOIds.size} selected</span>}
               </CardTitle>
             </div>
 
@@ -258,7 +261,7 @@ export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onD
             )}
           </div>
 
-          {selectedPOIds.size > 0 && (
+          {!isReadOnly && selectedPOIds.size > 0 && (
             <div className="mt-4 flex gap-2">
               <Button
                 onClick={handleApproveSelected}
@@ -278,7 +281,7 @@ export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onD
             </div>
           )}
 
-          {allIssues.length > 0 && (
+          {!isReadOnly && allIssues.length > 0 && (
             <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-primary" />
@@ -390,20 +393,22 @@ export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onD
                   } ${isSelected ? "ring-2 ring-primary/50" : ""}`}
                 >
                   <div className="flex items-start gap-4">
-                    <Checkbox
-                      checked={isSelected}
-                      ref={(el) => {
-                        if (el && isPartiallySelected) {
-                          const inputEl = el.querySelector('input[type="checkbox"]') as HTMLInputElement
-                          if (inputEl) {
-                            inputEl.indeterminate = true
+                    {!isReadOnly && (
+                      <Checkbox
+                        checked={isSelected}
+                        ref={(el) => {
+                          if (el && isPartiallySelected) {
+                            const inputEl = el.querySelector('input[type="checkbox"]') as HTMLInputElement
+                            if (inputEl) {
+                              inputEl.indeterminate = true
+                            }
                           }
-                        }
-                      }}
-                      onCheckedChange={(checked) => handleSelectGroup(group, checked as boolean)}
-                      className="mt-1 border-border"
-                      onClick={(e) => e.stopPropagation()}
-                    />
+                        }}
+                        onCheckedChange={(checked) => handleSelectGroup(group, checked as boolean)}
+                        className="mt-1 border-border"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    )}
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-3">
@@ -420,9 +425,14 @@ export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onD
                             {group.pos.length} Items Grouped
                           </Badge>
                         )}
-                        {groupIssues.length > 0 && (
+                        {!isReadOnly && groupIssues.length > 0 && (
                           <Badge className={getSeverityColor(highestIssue!.severity)}>
                             {groupIssues.length} ISSUE{groupIssues.length !== 1 ? "S" : ""}
+                          </Badge>
+                        )}
+                        {isReadOnly && (
+                          <Badge className="bg-green-500/20 text-green-500 border-green-500/30">
+                            APPROVED
                           </Badge>
                         )}
                       </div>
@@ -467,7 +477,7 @@ export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onD
                                 </div>
                               </div>
 
-                              {poIssues.length > 0 && (
+                              {!isReadOnly && poIssues.length > 0 && (
                                 <div className="mt-2 pt-2 border-t border-border/30">
                                   <div className="flex items-start gap-2">
                                     <AlertTriangle className="w-3 h-3 text-primary mt-0.5 flex-shrink-0" />
@@ -496,7 +506,7 @@ export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onD
         </CardContent>
       </Card>
 
-      {selectedPO && (
+      {selectedPO && !isReadOnly && (
         <>
           <div
             className="fixed inset-0 bg-black/50 z-40 animate-in fade-in duration-300"
