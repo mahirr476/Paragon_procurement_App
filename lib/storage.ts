@@ -22,10 +22,25 @@ export async function saveApprovedPOs(pos: PurchaseOrder[]) {
   return response.json()
 }
 
-export async function getApprovedPOs(): Promise<PurchaseOrder[]> {
+export async function getApprovedPOs(empId?: string): Promise<PurchaseOrder[]> {
   if (typeof window === "undefined") return []
-  // Fetch from ApprovalPO database instead of PurchaseOrder
-  const response = await fetch(getApiUrl("/api/approval-pos"))
+  
+  // Always get empId from current user if not provided
+  if (!empId) {
+    const { getCurrentUser } = await import("./auth")
+    const user = getCurrentUser()
+    empId = user?.empId
+  }
+  
+  // If still no empId, return empty array (don't fetch all records)
+  if (!empId) {
+    console.warn("[getApprovedPOs] No empId available, returning empty array")
+    return []
+  }
+  
+  // Fetch from ApprovalPO database with empId filter
+  const url = `/api/approval-pos?empId=${encodeURIComponent(empId)}`
+  const response = await fetch(getApiUrl(url))
   const data = await response.json()
   if (data.success && Array.isArray(data.pos)) {
     // Convert ApprovalPO format to PurchaseOrder format for compatibility
@@ -82,14 +97,25 @@ export async function getCurrentPOs(): Promise<PurchaseOrder[]> {
   return data.success ? data.pos : []
 }
 
-export async function addToApprovedPOs(pos: PurchaseOrder[]) {
+export async function addToApprovedPOs(pos: PurchaseOrder[], empId?: string) {
   if (typeof window === "undefined") return { success: false }
+  
+  if (!empId) {
+    // Try to get from current user
+    const { getCurrentUser } = await import("./auth")
+    const user = getCurrentUser()
+    if (user?.empId) {
+      empId = user.empId
+    } else {
+      return { success: false, error: "Employee ID (empId) is required" }
+    }
+  }
   
   // Save to ApprovalPO database
   const response = await fetch(getApiUrl("/api/approval-pos"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ pos }),
+    body: JSON.stringify({ pos, empId }),
   })
   return response.json()
 }
@@ -101,19 +127,47 @@ export async function getApprovalPOs(): Promise<PurchaseOrder[]> {
   return data.success ? data.pos : []
 }
 
-export async function addToRejectedPOs(pos: PurchaseOrder[], rejectReason?: string) {
+export async function addToRejectedPOs(pos: PurchaseOrder[], rejectReason?: string, empId?: string) {
   if (typeof window === "undefined") return { success: false }
+  
+  if (!empId) {
+    // Try to get from current user
+    const { getCurrentUser } = await import("./auth")
+    const user = getCurrentUser()
+    if (user?.empId) {
+      empId = user.empId
+    } else {
+      return { success: false, error: "Employee ID (empId) is required" }
+    }
+  }
+  
   const response = await fetch(getApiUrl("/api/reject-pos"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ pos, rejectReason }),
+    body: JSON.stringify({ pos, rejectReason, empId }),
   })
   return response.json()
 }
 
-export async function getRejectedPOs(): Promise<PurchaseOrder[]> {
+export async function getRejectedPOs(empId?: string): Promise<PurchaseOrder[]> {
   if (typeof window === "undefined") return []
-  const response = await fetch(getApiUrl("/api/reject-pos"))
+  
+  // Always get empId from current user if not provided
+  if (!empId) {
+    const { getCurrentUser } = await import("./auth")
+    const user = getCurrentUser()
+    empId = user?.empId
+  }
+  
+  // If still no empId, return empty array (don't fetch all records)
+  if (!empId) {
+    console.warn("[getRejectedPOs] No empId available, returning empty array")
+    return []
+  }
+  
+  // Fetch from RejectPO database with empId filter
+  const url = `/api/reject-pos?empId=${encodeURIComponent(empId)}`
+  const response = await fetch(getApiUrl(url))
   const data = await response.json()
   if (data.success && Array.isArray(data.pos)) {
     return data.pos.map((po: any) => ({

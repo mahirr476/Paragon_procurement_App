@@ -190,6 +190,7 @@ import { RefreshCw, CheckCircle2, XCircle } from "lucide-react"
 import { POComparison } from "@/components/po-comparison"
 import { DashboardStats } from "@/components/dashboard-stats"
 import { getApprovedPOs } from "@/lib/storage"
+import { getCurrentUser } from "@/lib/auth"
 import type { PurchaseOrder } from "@/lib/types"
 
 export default function ApprovalPOPage() {
@@ -199,8 +200,9 @@ export default function ApprovalPOPage() {
   const fetchApprovedPOs = async () => {
     setIsLoading(true)
     try {
-      // Now fetching directly from ApprovalPO database
-      const pos = await getApprovedPOs()
+      // Get current user's empId and fetch only their approved POs
+      const user = getCurrentUser()
+      const pos = await getApprovedPOs(user?.empId)
       // All data from ApprovalPO table is already approved, so no filtering needed
       setApprovedPOs(Array.isArray(pos) ? pos : [])
     } catch (error) {

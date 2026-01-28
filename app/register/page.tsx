@@ -19,6 +19,7 @@ export default function RegisterPage() {
     name: "",
     email: "",
     company: "",
+    empId: "",
     password: "",
     confirmPassword: "",
   })
@@ -37,7 +38,7 @@ export default function RegisterPage() {
     // Added console logs for debugging
     console.log("[v0] Registration attempt with:", { email: formData.email, name: formData.name })
 
-    if (!formData.name || !formData.email || !formData.company || !formData.password) {
+    if (!formData.name || !formData.email || !formData.company || !formData.empId || !formData.password) {
       setError("Please fill in all fields")
       setLoading(false)
       return
@@ -57,7 +58,7 @@ export default function RegisterPage() {
     }
 
     // Added await to properly handle the Promise
-    const result = await registerUser(formData.email, formData.password, formData.name, formData.company)
+    const result = await registerUser(formData.email, formData.password, formData.name, formData.company, formData.empId)
 
     console.log("[v0] Registration result:", result)
 
@@ -132,6 +133,20 @@ export default function RegisterPage() {
                 value={formData.company}
                 onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                 placeholder="Acme Corp"
+                className="bg-input border-border text-foreground mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="empId" className="text-muted-foreground">
+                Employee ID
+              </Label>
+              <Input
+                id="empId"
+                type="text"
+                value={formData.empId}
+                onChange={(e) => setFormData({ ...formData, empId: e.target.value })}
+                placeholder="e0984"
                 className="bg-input border-border text-foreground mt-1"
               />
             </div>

@@ -130,7 +130,8 @@
 //   useEffect(() => {
 //     const handleFocus = () => {
 //       if (activeSection === "overview") {
-//         getApprovedPOs().then(pos => {
+//         const user = getCurrentUser()
+//         getApprovedPOs(user?.empId).then(pos => {
 //           console.log("[Dashboard] Refreshed on focus:", pos.length)
 //           setApprovedPOs(pos)
 //         }).catch(console.error)
@@ -139,7 +140,8 @@
     
 //     const handlePOsApproved = () => {
 //       if (activeSection === "overview") {
-//         getApprovedPOs().then(pos => {
+//         const user = getCurrentUser()
+//         getApprovedPOs(user?.empId).then(pos => {
 //           console.log("[Dashboard] Refreshed after approval:", pos.length)
 //           setApprovedPOs(pos)
 //         }).catch(console.error)
@@ -658,7 +660,8 @@ export default function TacticalDashboard() {
   useEffect(() => {
     async function loadApprovedPOs() {
       try {
-        const pos = await getApprovedPOs()
+        const user = getCurrentUser()
+        const pos = await getApprovedPOs(user?.empId)
         setApprovedPOs(pos)
       } catch (error) {
         console.error("[v0] Error loading approved POs:", error)
@@ -672,7 +675,8 @@ export default function TacticalDashboard() {
   useEffect(() => {
     async function refreshPOs() {
       try {
-        const pos = await getApprovedPOs()
+        const user = getCurrentUser()
+        const pos = await getApprovedPOs(user?.empId)
         console.log("[Dashboard] Loaded approved POs:", pos.length)
         setApprovedPOs(pos)
       } catch (error) {
@@ -701,7 +705,8 @@ export default function TacticalDashboard() {
   useEffect(() => {
     const handleFocus = () => {
       if (activeSection === "overview") {
-        getApprovedPOs().then(pos => {
+        const user = getCurrentUser()
+        getApprovedPOs(user?.empId).then(pos => {
           console.log("[Dashboard] Refreshed on focus:", pos.length)
           setApprovedPOs(pos)
         }).catch(console.error)
@@ -710,7 +715,8 @@ export default function TacticalDashboard() {
     
     const handlePOsApproved = () => {
       if (activeSection === "overview") {
-        getApprovedPOs().then(pos => {
+        const user = getCurrentUser()
+        getApprovedPOs(user?.empId).then(pos => {
           console.log("[Dashboard] Refreshed after approval:", pos.length)
           setApprovedPOs(pos)
         }).catch(console.error)
@@ -725,7 +731,8 @@ export default function TacticalDashboard() {
         const now = Date.now()
         // If approved within last 10 seconds, refresh
         if (now - lastTime < 10000 && activeSection === "overview") {
-          getApprovedPOs().then(setApprovedPOs).catch(console.error)
+          const user = getCurrentUser()
+          getApprovedPOs(user?.empId).then(setApprovedPOs).catch(console.error)
         }
       }
     }

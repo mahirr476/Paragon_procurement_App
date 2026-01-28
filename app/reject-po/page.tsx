@@ -7,6 +7,7 @@ import { RefreshCw, XCircle } from "lucide-react"
 import { POComparison } from "@/components/po-comparison"
 import { DashboardStats } from "@/components/dashboard-stats"
 import { getRejectedPOs } from "@/lib/storage"
+import { getCurrentUser } from "@/lib/auth"
 import type { PurchaseOrder } from "@/lib/types"
 
 export default function RejectPOPage() {
@@ -16,7 +17,9 @@ export default function RejectPOPage() {
   const fetchRejectedPOs = async () => {
     setIsLoading(true)
     try {
-      const pos = await getRejectedPOs()
+      // Get current user's empId and fetch only their rejected POs
+      const user = getCurrentUser()
+      const pos = await getRejectedPOs(user?.empId)
       setRejectedPOs(Array.isArray(pos) ? pos : [])
     } catch (error) {
       console.error("Error fetching rejected POs:", error)

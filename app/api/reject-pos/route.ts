@@ -3,13 +3,21 @@ import { prisma } from "@/lib/prisma"
 
 export async function GET(req: NextRequest) {
   try {
-    console.log("[RejectPO API] GET - Fetching rejected POs")
+    const empId = req.nextUrl.searchParams.get("empId")
+    console.log("[RejectPO API] GET - Fetching rejected POs for empId:", empId)
 
+    // Require empId to prevent showing all records (including old NULL ones)
+    if (!empId) {
+      console.log("[RejectPO API] GET - No empId provided, returning empty array")
+      return NextResponse.json({ success: true, pos: [] })
+    }
+    
     const rejectPOs = await prisma.rejectPO.findMany({
+      where: { empId },
       orderBy: { rejectedAt: "desc" },
     })
 
-    console.log("[RejectPO API] GET - found:", rejectPOs.length, "rejected POs")
+    console.log("[RejectPO API] GET - found:", rejectPOs.length, "rejected POs for empId:", empId)
     return NextResponse.json({ success: true, pos: rejectPOs })
   } catch (error) {
     console.error("[RejectPO API] Get error:", error)
@@ -29,11 +37,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, count: 0, error: "Invalid JSON in request body" }, { status: 400 })
     }
 
-    const { pos, rejectReason } = body || {}
-    console.log("[RejectPO API] POST - count:", pos?.length)
+    const { pos, rejectReason, empId } = body || {}
+    console.log("[RejectPO API] POST - count:", pos?.length, "empId:", empId)
 
     if (!pos || !Array.isArray(pos) || pos.length === 0) {
       return NextResponse.json({ success: false, count: 0, error: "No purchase orders provided" }, { status: 400 })
+    }
+
+    if (!empId) {
+      return NextResponse.json(
+        { success: false, count: 0, error: "Employee ID (empId) is required" },
+        { status: 400 },
+      )
     }
 
     const rejectPOsData = pos.map((po: any) => ({
@@ -64,6 +79,7 @@ export async function POST(req: NextRequest) {
       openPO: po.openPO || "",
       openPONo: po.openPONo || "",
       rejectReason: rejectReason || null,
+      empId: empId,
     }))
 
     const created = await prisma.rejectPO.createMany({

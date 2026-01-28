@@ -100,8 +100,16 @@ export default function PendingPOPage() {
     setIsLoading(true)
     setError(null)
     try {
-      // ✅ Changed back to REAL API endpoint
-      const response = await fetch("/api/pending-pos", {
+      // Get logged-in user's empId
+      const user = getCurrentUser()
+      if (!user || !user.empId) {
+        setError("Please login with a valid Employee ID to fetch pending POs")
+        setIsLoading(false)
+        return
+      }
+
+      // ✅ Changed back to REAL API endpoint with user's empId
+      const response = await fetch(`/api/pending-pos?empId=${encodeURIComponent(user.empId)}&approvalLevel=2`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -193,8 +201,9 @@ export default function PendingPOPage() {
         return updatedPendingPOs
       })
 
-      // Reload approved POs
-      const approved = await getApprovedPOs()
+      // Reload approved POs for current user
+      const user = getCurrentUser()
+      const approved = await getApprovedPOs(user?.empId)
       setApprovedPOs(approved)
 
       // Trigger refresh event
@@ -303,7 +312,8 @@ export default function PendingPOPage() {
         alert(`Failed to approve POs: ${result.error || "Unknown error"}`)
         return
       }
-      const [updated, approved] = await Promise.all([getCurrentPOs(), getApprovedPOs()])
+      const user = getCurrentUser()
+      const [updated, approved] = await Promise.all([getCurrentPOs(), getApprovedPOs(user?.empId)])
       setCurrentPOs(updated)
       setApprovedPOs(approved)
       if (updated.length === 0) {
@@ -357,10 +367,11 @@ export default function PendingPOPage() {
       setIsLoading(false)
     }
 
-    // Load approved POs
+    // Load approved POs for current user
     const loadApproved = async () => {
       try {
-        const approved = await getApprovedPOs()
+        const user = getCurrentUser()
+        const approved = await getApprovedPOs(user?.empId)
         setApprovedPOs(approved)
       } catch (error) {
         console.error("Error loading approved POs:", error)

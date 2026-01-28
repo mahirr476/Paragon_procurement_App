@@ -9,7 +9,14 @@ export async function GET(request: NextRequest) {
     
     const searchParams = request.nextUrl.searchParams
     const approvalLevel = searchParams.get("approvalLevel") || "2"
-    const empId = searchParams.get("empId") || "e0984"
+    const empId = searchParams.get("empId")
+    
+    if (!empId) {
+      return NextResponse.json({ 
+        error: "Employee ID (empId) is required", 
+        success: false 
+      }, { status: 400 })
+    }
     
     const requestBody = JSON.stringify({
       RequestObject: {

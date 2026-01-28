@@ -3,13 +3,21 @@ import { prisma } from "@/lib/prisma"
 
 export async function GET(req: NextRequest) {
   try {
-    console.log("[ApprovalPO API] GET - Fetching approved POs")
+    const empId = req.nextUrl.searchParams.get("empId")
+    console.log("[ApprovalPO API] GET - Fetching approved POs for empId:", empId)
 
+    // Require empId to prevent showing all records (including old NULL ones)
+    if (!empId) {
+      console.log("[ApprovalPO API] GET - No empId provided, returning empty array")
+      return NextResponse.json({ success: true, pos: [] })
+    }
+    
     const approvalPOs = await prisma.approvalPO.findMany({
+      where: { empId },
       orderBy: { approvedAt: "desc" },
     })
 
-    console.log("[ApprovalPO API] GET - found:", approvalPOs.length, "approved POs")
+    console.log("[ApprovalPO API] GET - found:", approvalPOs.length, "approved POs for empId:", empId)
     
     return NextResponse.json({ success: true, pos: approvalPOs })
   } catch (error) {
@@ -33,12 +41,19 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { pos } = body || {}
-    console.log("[ApprovalPO API] POST - count:", pos?.length)
+    const { pos, empId } = body || {}
+    console.log("[ApprovalPO API] POST - count:", pos?.length, "empId:", empId)
 
     if (!pos || !Array.isArray(pos) || pos.length === 0) {
       return NextResponse.json(
         { success: false, count: 0, error: "No purchase orders provided" },
+        { status: 400 },
+      )
+    }
+
+    if (!empId) {
+      return NextResponse.json(
+        { success: false, count: 0, error: "Employee ID (empId) is required" },
         { status: 400 },
       )
     }
@@ -72,6 +87,7 @@ export async function POST(req: NextRequest) {
       openPO: po.openPO || "",
       openPONo: po.openPONo || "",
       approvalNotes: po.approvalNotes || null,
+      empId: empId,
     }))
 
     // Create approval POs (allowing duplicates in case same PO is approved multiple times)
