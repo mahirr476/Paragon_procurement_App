@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     
     const searchParams = request.nextUrl.searchParams
     const approvalLevel = searchParams.get("approvalLevel") || "2"
-    const empId = searchParams.get("empId") || "e0440"
+    const empId = searchParams.get("empId") || "e0984"
     
     const requestBody = JSON.stringify({
       RequestObject: {

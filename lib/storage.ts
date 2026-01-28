@@ -101,6 +101,57 @@ export async function getApprovalPOs(): Promise<PurchaseOrder[]> {
   return data.success ? data.pos : []
 }
 
+export async function addToRejectedPOs(pos: PurchaseOrder[], rejectReason?: string) {
+  if (typeof window === "undefined") return { success: false }
+  const response = await fetch(getApiUrl("/api/reject-pos"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pos, rejectReason }),
+  })
+  return response.json()
+}
+
+export async function getRejectedPOs(): Promise<PurchaseOrder[]> {
+  if (typeof window === "undefined") return []
+  const response = await fetch(getApiUrl("/api/reject-pos"))
+  const data = await response.json()
+  if (data.success && Array.isArray(data.pos)) {
+    return data.pos.map((po: any) => ({
+      id: po.id,
+      date: po.date,
+      supplier: po.supplier,
+      orderNo: po.orderNo,
+      refNo: po.refNo,
+      dueDate: po.dueDate,
+      branch: po.branch,
+      requisitionType: po.requisitionType,
+      itemLedgerGroup: po.itemLedgerGroup,
+      item: po.item,
+      minQty: po.minQty,
+      maxQty: po.maxQty,
+      unit: po.unit,
+      rate: po.rate,
+      deliveryDate: po.deliveryDate,
+      cgst: po.cgst,
+      sgst: po.sgst,
+      igst: po.igst,
+      vat: po.vat,
+      lastApprovedRate: po.lastApprovedRate,
+      lastSupplier: po.lastSupplier,
+      broker: po.broker,
+      totalAmount: po.totalAmount,
+      status: po.status || "rejected",
+      deliveryType: po.deliveryType,
+      openPO: po.openPO,
+      openPONo: po.openPONo,
+      uploadedAt: po.rejectedAt ? new Date(po.rejectedAt).toISOString() : new Date().toISOString(),
+      isApproved: false,
+      approvalNotes: po.rejectReason,
+    }))
+  }
+  return []
+}
+
 export async function clearCurrentPOs() {
   const currentPOs = await getCurrentPOs()
   const ids = currentPOs.map((po) => po.id)

@@ -10,6 +10,8 @@ interface DashboardStatsProps {
   currentPOs: PurchaseOrder[]
   approvedPOs: PurchaseOrder[]
   showPending?: boolean // Whether to show pending approval count
+  statusLabel?: string // Override last card label (e.g. REJECTED)
+  statusValue?: number // Override last card value
 }
 
 interface StatCardProps {
@@ -19,7 +21,13 @@ interface StatCardProps {
   unit?: string
 }
 
-export function DashboardStats({ currentPOs, approvedPOs, showPending = true }: DashboardStatsProps) {
+export function DashboardStats({
+  currentPOs,
+  approvedPOs,
+  showPending = true,
+  statusLabel,
+  statusValue,
+}: DashboardStatsProps) {
   const stats = useMemo(() => {
     // Use approvedPOs if currentPOs is empty (for Approval PO page)
     const posToUse = currentPOs.length > 0 ? currentPOs : approvedPOs
@@ -96,7 +104,9 @@ export function DashboardStats({ currentPOs, approvedPOs, showPending = true }: 
       <StatCard label="AVG VALUE" value={Math.round(stats.averageOrderValue).toLocaleString()} icon={TrendingUp} unit="৳" />
       <StatCard label="SUPPLIERS" value={stats.uniqueSuppliers} icon={Users} />
       <StatCard label="BRANCHES" value={stats.uniqueBranches} icon={Building2} />
-      {showPending ? (
+      {statusLabel && typeof statusValue === "number" ? (
+        <StatCard label={statusLabel} value={statusValue} icon={Package} />
+      ) : showPending ? (
         <StatCard label="PENDING" value={stats.pendingApproval} icon={Package} />
       ) : (
         <StatCard label="APPROVED" value={stats.approvedCount} icon={Package} />
