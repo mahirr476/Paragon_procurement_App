@@ -192,6 +192,20 @@ export default function PendingPOPage() {
         return
       }
 
+      // Show external API response if available
+      if (result.externalApiResponse) {
+        const extResponse = result.externalApiResponse
+        if (extResponse.success) {
+          console.log("External API Success:", extResponse.data)
+          // Show success message with API response
+          const responseMsg = JSON.stringify(extResponse.data, null, 2)
+          alert(`✅ Successfully approved ${result.count} purchase order(s)!\n\nExternal API Response:\n${responseMsg.substring(0, 500)}${responseMsg.length > 500 ? '...' : ''}`)
+        } else {
+          console.warn("External API Error:", extResponse.error)
+          alert(`⚠️ Local approval succeeded but external API failed:\n${extResponse.error || "Unknown error"}\n\n${result.count} PO(s) saved locally.`)
+        }
+      }
+
       // Remove approved POs from pending list
       setPendingPOs((prev: PurchaseOrder[]) => {
         const updatedPendingPOs = prev.filter((po: PurchaseOrder) => !poIds.includes(po.id))
@@ -211,7 +225,9 @@ export default function PendingPOPage() {
         window.dispatchEvent(new CustomEvent("pos-approved", { detail: { count: result.count } }))
         localStorage.setItem("pos-last-approved", Date.now().toString())
 
-        alert(`Successfully approved ${result.count} purchase order(s)! They will now appear in the Approval PO page.`)
+        if (!result.externalApiResponse) {
+          alert(`Successfully approved ${result.count} purchase order(s)! They will now appear in the Approval PO page.`)
+        }
       }
     } catch (error) {
       console.error("Error approving POs:", error)
@@ -233,6 +249,19 @@ export default function PendingPOPage() {
         if (!result?.success) {
           alert(`Failed to reject POs: ${result?.error || "Unknown error"}`)
           return
+        }
+
+        // Show external API response if available
+        if (result.externalApiResponse) {
+          const extResponse = result.externalApiResponse
+          if (extResponse.success) {
+            console.log("External API Success:", extResponse.data)
+            const responseMsg = JSON.stringify(extResponse.data, null, 2)
+            alert(`✅ Successfully rejected ${result.count} purchase order(s)!\n\nExternal API Response:\n${responseMsg.substring(0, 500)}${responseMsg.length > 500 ? '...' : ''}`)
+          } else {
+            console.warn("External API Error:", extResponse.error)
+            alert(`⚠️ Local rejection succeeded but external API failed:\n${extResponse.error || "Unknown error"}\n\n${result.count} PO(s) saved locally.`)
+          }
         }
       } catch (error) {
         console.error("Error rejecting POs:", error)

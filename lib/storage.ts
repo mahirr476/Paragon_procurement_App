@@ -97,7 +97,7 @@ export async function getCurrentPOs(): Promise<PurchaseOrder[]> {
   return data.success ? data.pos : []
 }
 
-export async function addToApprovedPOs(pos: PurchaseOrder[], empId?: string) {
+export async function addToApprovedPOs(pos: PurchaseOrder[], empId?: string, approvalLevel: string = "2") {
   if (typeof window === "undefined") return { success: false }
   
   if (!empId) {
@@ -111,13 +111,44 @@ export async function addToApprovedPOs(pos: PurchaseOrder[], empId?: string) {
     }
   }
   
+  // Prepare order list for external API
+  const orderNoList = pos.map((po) => ({
+    OrderNumber: po.orderNo,
+    ApprovalLevel: approvalLevel,
+    EmpId: empId,
+    Status: "Approved",
+    Remark: po.approvalNotes || "",
+  }))
+
+  // Call external push API first
+  let pushApiResponse = null
+  try {
+    console.log("[addToApprovedPOs] Calling external push API with", orderNoList.length, "orders")
+    const pushResponse = await fetch(getApiUrl("/api/push-po-approvals"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderNoList }),
+    })
+    pushApiResponse = await pushResponse.json()
+    console.log("[addToApprovedPOs] External API response:", pushApiResponse)
+  } catch (error) {
+    console.error("[addToApprovedPOs] Error calling external API:", error)
+    // Continue with local save even if external API fails
+  }
+  
   // Save to ApprovalPO database
   const response = await fetch(getApiUrl("/api/approval-pos"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ pos, empId }),
   })
-  return response.json()
+  const localResult = await response.json()
+  
+  // Include external API response in the result
+  return {
+    ...localResult,
+    externalApiResponse: pushApiResponse,
+  }
 }
 
 export async function getApprovalPOs(): Promise<PurchaseOrder[]> {
@@ -127,7 +158,7 @@ export async function getApprovalPOs(): Promise<PurchaseOrder[]> {
   return data.success ? data.pos : []
 }
 
-export async function addToRejectedPOs(pos: PurchaseOrder[], rejectReason?: string, empId?: string) {
+export async function addToRejectedPOs(pos: PurchaseOrder[], rejectReason?: string, empId?: string, approvalLevel: string = "2") {
   if (typeof window === "undefined") return { success: false }
   
   if (!empId) {
@@ -141,12 +172,43 @@ export async function addToRejectedPOs(pos: PurchaseOrder[], rejectReason?: stri
     }
   }
   
+  // Prepare order list for external API
+  const orderNoList = pos.map((po) => ({
+    OrderNumber: po.orderNo,
+    ApprovalLevel: approvalLevel,
+    EmpId: empId,
+    Status: "Reject",
+    Remark: rejectReason || "",
+  }))
+
+  // Call external push API first
+  let pushApiResponse = null
+  try {
+    console.log("[addToRejectedPOs] Calling external push API with", orderNoList.length, "orders")
+    const pushResponse = await fetch(getApiUrl("/api/push-po-approvals"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderNoList }),
+    })
+    pushApiResponse = await pushResponse.json()
+    console.log("[addToRejectedPOs] External API response:", pushApiResponse)
+  } catch (error) {
+    console.error("[addToRejectedPOs] Error calling external API:", error)
+    // Continue with local save even if external API fails
+  }
+  
   const response = await fetch(getApiUrl("/api/reject-pos"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ pos, rejectReason, empId }),
   })
-  return response.json()
+  const localResult = await response.json()
+  
+  // Include external API response in the result
+  return {
+    ...localResult,
+    externalApiResponse: pushApiResponse,
+  }
 }
 
 export async function getRejectedPOs(empId?: string): Promise<PurchaseOrder[]> {
