@@ -1,3 +1,6 @@
+
+
+
 // "use client"
 
 // import { useState, useMemo } from "react"
@@ -18,6 +21,7 @@
 //   onApprove?: (poIds: string[]) => void
 //   onDelete?: (poIds: string[]) => void
 //   isReadOnly?: boolean // For approved PO view - hides approve buttons and issues
+//   hideActions?: boolean // NEW: Hide all action buttons and checkboxes
 // }
 
 // interface POGroup {
@@ -27,7 +31,14 @@
 //   pos: PurchaseOrder[]
 // }
 
-// export function POComparison({ currentPOs = [], approvedPOs = [], onApprove, onDelete, isReadOnly = false }: POComparisonProps) {
+// export function POComparison({ 
+//   currentPOs = [], 
+//   approvedPOs = [], 
+//   onApprove, 
+//   onDelete, 
+//   isReadOnly = false,
+//   hideActions = false // NEW: Default to false
+// }: POComparisonProps) {
 //   const [selectedPO, setSelectedPO] = useState<PurchaseOrder | null>(null)
 //   const [resolvedIssues, setResolvedIssues] = useState<Set<string>>(new Set())
 //   const [selectedBranch, setSelectedBranch] = useState<string>("all")
@@ -211,6 +222,9 @@
 
 //   const allSelected = Array.isArray(filteredPOs) && filteredPOs.length > 0 && selectedPOIds.size === filteredPOs.length
 
+//   // Determine if we should show actions (checkboxes, buttons, issues)
+//   const showActions = !isReadOnly && !hideActions
+
 //   if (!Array.isArray(currentPOs) || currentPOs.length === 0) {
 //     return (
 //       <Card className="bg-card border-border">
@@ -227,12 +241,12 @@
 //         <CardHeader>
 //           <div className="flex items-center justify-between flex-wrap gap-4">
 //             <div className="flex items-center gap-4" data-tour="upload-actions">
-//               {!isReadOnly && (
+//               {showActions && (
 //                 <Checkbox checked={allSelected} onCheckedChange={handleSelectAll} className="border-border" />
 //               )}
 //               <CardTitle className="text-sm font-medium text-muted-foreground tracking-wider">
-//                 {isReadOnly ? "APPROVED PURCHASE ORDERS" : "UPLOADED PURCHASE ORDERS"} ({filteredPOs.length})
-//                 {!isReadOnly && selectedPOIds.size > 0 && <span className="ml-2 text-primary">{selectedPOIds.size} selected</span>}
+//                 {isReadOnly || hideActions ? "PURCHASE ORDERS" : "UPLOADED PURCHASE ORDERS"} ({filteredPOs.length})
+//                 {showActions && selectedPOIds.size > 0 && <span className="ml-2 text-primary">{selectedPOIds.size} selected</span>}
 //               </CardTitle>
 //             </div>
 
@@ -261,7 +275,7 @@
 //             )}
 //           </div>
 
-//           {!isReadOnly && selectedPOIds.size > 0 && (
+//           {showActions && selectedPOIds.size > 0 && (
 //             <div className="mt-4 flex gap-2">
 //               <Button
 //                 onClick={handleApproveSelected}
@@ -281,7 +295,7 @@
 //             </div>
 //           )}
 
-//           {!isReadOnly && allIssues.length > 0 && (
+//           {showActions && allIssues.length > 0 && (
 //             <div className="mt-4 p-3 bg-primary/10 border border-primary/20 rounded">
 //               <div className="flex items-center gap-2">
 //                 <AlertTriangle className="w-4 h-4 text-primary" />
@@ -387,13 +401,13 @@
 //                 <div
 //                   key={group.id}
 //                   className={`border rounded p-4 transition-all ${
-//                     highestIssue
+//                     showActions && highestIssue
 //                       ? `${getSeverityColor(highestIssue.severity)} border-l-4 hover:bg-opacity-30`
 //                       : "border-border hover:border-muted hover:bg-muted/50"
 //                   } ${isSelected ? "ring-2 ring-primary/50" : ""}`}
 //                 >
 //                   <div className="flex items-start gap-4">
-//                     {!isReadOnly && (
+//                     {showActions && (
 //                       <Checkbox
 //                         checked={isSelected}
 //                         ref={(el) => {
@@ -425,12 +439,12 @@
 //                             {group.pos.length} Items Grouped
 //                           </Badge>
 //                         )}
-//                         {!isReadOnly && groupIssues.length > 0 && (
+//                         {showActions && groupIssues.length > 0 && (
 //                           <Badge className={getSeverityColor(highestIssue!.severity)}>
 //                             {groupIssues.length} ISSUE{groupIssues.length !== 1 ? "S" : ""}
 //                           </Badge>
 //                         )}
-//                         {isReadOnly && (
+//                         {(isReadOnly || hideActions) && (
 //                           <Badge className="bg-green-500/20 text-green-500 border-green-500/30">
 //                             APPROVED
 //                           </Badge>
@@ -477,7 +491,7 @@
 //                                 </div>
 //                               </div>
 
-//                               {!isReadOnly && poIssues.length > 0 && (
+//                               {showActions && poIssues.length > 0 && (
 //                                 <div className="mt-2 pt-2 border-t border-border/30">
 //                                   <div className="flex items-start gap-2">
 //                                     <AlertTriangle className="w-3 h-3 text-primary mt-0.5 flex-shrink-0" />
@@ -506,7 +520,7 @@
 //         </CardContent>
 //       </Card>
 
-//       {selectedPO && !isReadOnly && (
+//       {selectedPO && showActions && (
 //         <>
 //           <div
 //             className="fixed inset-0 bg-black/50 z-40 animate-in fade-in duration-300"
@@ -523,6 +537,7 @@
 //     </>
 //   )
 // }
+
 
 
 
@@ -777,7 +792,7 @@ export function POComparison({
               </CardTitle>
             </div>
 
-            {branches.length > 0 && (
+            {/* {branches.length > 0 && (
               <div className="flex items-center gap-2" data-tour="upload-branch-filter">
                 <Building2 className="w-4 h-4 text-muted-foreground" />
                 <Select value={selectedBranch} onValueChange={setSelectedBranch}>
@@ -799,7 +814,7 @@ export function POComparison({
                   </SelectContent>
                 </Select>
               </div>
-            )}
+            )} */}
           </div>
 
           {showActions && selectedPOIds.size > 0 && (
@@ -834,16 +849,16 @@ export function POComparison({
           )}
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Minimal Filter Bar */}
+          {/* Minimal Filter Bar - REDUCED SEARCH WIDTH */}
           <div className="flex items-center gap-2 px-3 py-2 bg-neutral-800/50 rounded-lg border border-neutral-700/50">
             <Filter className="w-3.5 h-3.5 text-neutral-500" />
 
-            {/* Search */}
+            {/* Search - REDUCED WIDTH from flex-1 max-w-xs to w-48 */}
             <Input
-              placeholder="Search orders, suppliers, items..."
+              placeholder="Search PO, supplier..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="h-7 text-xs flex-1 max-w-xs bg-neutral-900 border-neutral-700 text-white placeholder:text-neutral-500"
+              className="h-7 text-xs w-48 bg-neutral-900 border-neutral-700 text-white placeholder:text-neutral-500"
             />
 
             {/* Branch Filter */}
@@ -934,21 +949,24 @@ export function POComparison({
                   } ${isSelected ? "ring-2 ring-primary/50" : ""}`}
                 >
                   <div className="flex items-start gap-4">
+                    {/* ENHANCED CHECKBOX with better styling */}
                     {showActions && (
-                      <Checkbox
-                        checked={isSelected}
-                        ref={(el) => {
-                          if (el && isPartiallySelected) {
-                            const inputEl = el.querySelector('input[type="checkbox"]') as HTMLInputElement
-                            if (inputEl) {
-                              inputEl.indeterminate = true
+                      <div className="mt-1 p-1.5 rounded-md bg-accent/10 border border-accent/20 hover:bg-accent/20 transition-colors">
+                        <Checkbox
+                          checked={isSelected}
+                          ref={(el) => {
+                            if (el && isPartiallySelected) {
+                              const inputEl = el.querySelector('input[type="checkbox"]') as HTMLInputElement
+                              if (inputEl) {
+                                inputEl.indeterminate = true
+                              }
                             }
-                          }
-                        }}
-                        onCheckedChange={(checked) => handleSelectGroup(group, checked as boolean)}
-                        className="mt-1 border-border"
-                        onClick={(e) => e.stopPropagation()}
-                      />
+                          }}
+                          onCheckedChange={(checked) => handleSelectGroup(group, checked as boolean)}
+                          className="border-accent data-[state=checked]:bg-accent data-[state=checked]:border-accent"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
                     )}
 
                     <div className="flex-1 min-w-0">
@@ -988,33 +1006,46 @@ export function POComparison({
                               className={`${idx > 0 ? "pt-3 border-t border-border/50" : ""} cursor-pointer hover:bg-muted/30 p-2 rounded transition-colors`}
                               onClick={() => setSelectedPO(po)}
                             >
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="text-xs font-mono text-muted-foreground">{po.orderNo}</span>
-                                {po.branch && (
-                                  <Badge variant="outline" className="text-xs border-border text-muted-foreground">
-                                    {po.branch}
-                                  </Badge>
-                                )}
+                              {/* HEADER: PO Number (LEFT) + Date (RIGHT) */}
+                              <div className="flex items-start justify-between gap-4 mb-3">
+                                {/* LEFT: HIGHLIGHTED PO NUMBER with enhanced styling */}
+                                <div className="flex items-center gap-2">
+                                  <div className="px-3 py-1.5 bg-accent/20 border-2 border-accent/40 rounded-md">
+                                    <span className="text-sm font-bold text-accent font-mono tracking-wide">
+                                      {po.orderNo}
+                                    </span>
+                                  </div>
+                                  {po.branch && (
+                                    <Badge variant="outline" className="text-xs border-border text-muted-foreground">
+                                      {po.branch}
+                                    </Badge>
+                                  )}
+                                </div>
+
+                                {/* RIGHT: DATE ONLY in top right corner */}
+                                <div className="text-right">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <span className="text-xs text-muted-foreground">Date:</span>
+                                    <span className="text-xs font-semibold text-foreground">{po.date}</span>
+                                  </div>
+                                </div>
                               </div>
 
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                              {/* DETAILS GRID: Item, Quantity and Rate */}
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
                                 <div>
                                   <p className="text-muted-foreground">Item</p>
                                   <p className="text-foreground truncate">{po.item}</p>
                                 </div>
                                 <div>
-                                  <p className="text-muted-foreground">Date</p>
-                                  <p className="text-foreground">{po.date}</p>
-                                </div>
-                                <div>
                                   <p className="text-muted-foreground">Quantity</p>
-                                  <p className="text-foreground">
+                                  <p className="text-foreground font-medium">
                                     {po.maxQty} {po.unit}
                                   </p>
                                 </div>
                                 <div>
                                   <p className="text-muted-foreground">Rate</p>
-                                  <p className="text-foreground font-mono">৳{po.rate.toLocaleString()}</p>
+                                  <p className="text-foreground font-mono font-semibold">৳{po.rate.toLocaleString()}</p>
                                 </div>
                               </div>
 
