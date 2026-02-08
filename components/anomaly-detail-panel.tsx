@@ -1,3 +1,5 @@
+
+
 'use client'
 
 import { X, AlertTriangle, TrendingUp, Package, Building2, Calendar, DollarSign } from 'lucide-react'
@@ -27,100 +29,80 @@ export function AnomalyDetailPanel({ anomaly, onClose, onResolve }: AnomalyDetai
   return (
     <>
       {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black/60 z-40"
-        onClick={onClose}
-      />
+      <div className="fixed inset-0 bg-black/60 z-40" onClick={onClose} />
 
-      {/* Slide-out Panel */}
-      <div className="fixed inset-y-0 right-0 w-full md:w-[600px] bg-neutral-950 border-l border-neutral-700 shadow-2xl z-50 overflow-y-auto animate-in slide-in-from-right duration-300">
-        <div className="p-6 space-y-6">
+      {/* Slide-out Panel - full width on mobile */}
+      <div className="fixed inset-y-0 right-0 w-full sm:w-[90%] md:w-[600px] bg-neutral-950 border-l border-neutral-700 shadow-2xl z-50 overflow-y-auto animate-in slide-in-from-right duration-300">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Header */}
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-3">
-              <div className={`w-2 h-16 ${getSeverityColor(anomaly.severity)} rounded-full`} />
-              <div>
-                <h2 className="text-xl font-semibold text-white">{anomaly.type}</h2>
-                <p className="text-sm text-neutral-400 mt-1">{anomaly.description}</p>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0">
+              <div className={`w-1.5 sm:w-2 h-12 sm:h-16 ${getSeverityColor(anomaly.severity)} rounded-full shrink-0`} />
+              <div className="min-w-0">
+                <h2 className="text-base sm:text-xl font-semibold text-white">{anomaly.type}</h2>
+                <p className="text-xs sm:text-sm text-neutral-400 mt-1">{anomaly.description}</p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={onClose}
-              className="text-neutral-400 hover:text-white"
-            >
-              <X className="w-5 h-5" />
+            <Button variant="ghost" size="icon" onClick={onClose}
+              className="text-neutral-400 hover:text-white h-8 w-8 sm:h-10 sm:w-10 shrink-0">
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </Button>
           </div>
 
           {/* Severity Badge */}
-          <Badge className={`${getSeverityColor(anomaly.severity)} text-white uppercase text-xs`}>
+          <Badge className={`${getSeverityColor(anomaly.severity)} text-white uppercase text-[10px] sm:text-xs`}>
             {anomaly.severity} SEVERITY
           </Badge>
 
           {/* Item Details */}
           <Card className="bg-neutral-800 border-neutral-700">
-            <CardContent className="p-4 space-y-3">
+            <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">
               <div className="flex items-center gap-2">
-                <Package className="w-4 h-4 text-orange-500" />
-                <span className="text-xs text-neutral-400">ITEM DETAILS</span>
+                <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500" />
+                <span className="text-[10px] sm:text-xs text-neutral-400 uppercase tracking-wider">Item Details</span>
               </div>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs text-neutral-500">Item Name</p>
-                  <p className="text-sm font-medium text-white">{anomaly.itemName}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-neutral-500">Category</p>
-                  <p className="text-sm font-medium text-white">{anomaly.category}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-neutral-500">Supplier</p>
-                  <p className="text-sm font-medium text-white">{anomaly.supplier}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-neutral-500">Branch</p>
-                  <p className="text-sm font-medium text-white">{anomaly.branch}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-neutral-500">Date</p>
-                  <p className="text-sm font-medium text-white">{anomaly.date}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-neutral-500">Related Orders</p>
-                  <p className="text-sm font-medium text-white">{anomaly.relatedPOs.length}</p>
-                </div>
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                {[
+                  { label: "Item Name", value: anomaly.itemName },
+                  { label: "Category", value: anomaly.category },
+                  { label: "Supplier", value: anomaly.supplier },
+                  { label: "Branch", value: anomaly.branch },
+                  { label: "Date", value: anomaly.date },
+                  { label: "Related Orders", value: anomaly.relatedPOs.length },
+                ].map((item, idx) => (
+                  <div key={idx}>
+                    <p className="text-[10px] sm:text-xs text-neutral-500">{item.label}</p>
+                    <p className="text-xs sm:text-sm font-medium text-white truncate">{item.value}</p>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
 
           {/* Metrics Comparison */}
           <Card className="bg-neutral-800 border-neutral-700">
-            <CardContent className="p-4 space-y-3">
+            <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">
               <div className="flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-orange-500" />
-                <span className="text-xs text-neutral-400">METRICS ANALYSIS</span>
+                <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500" />
+                <span className="text-[10px] sm:text-xs text-neutral-400 uppercase tracking-wider">Metrics Analysis</span>
               </div>
-              
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-neutral-400">Current Value</span>
-                  <span className="text-sm font-mono font-bold text-white">
+                  <span className="text-xs sm:text-sm text-neutral-400">Current Value</span>
+                  <span className="text-xs sm:text-sm font-mono font-bold text-white">
                     {anomaly.metrics.currentValue.toLocaleString()} {anomaly.metrics.unit}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-neutral-400">Expected Value</span>
-                  <span className="text-sm font-mono text-neutral-300">
+                  <span className="text-xs sm:text-sm text-neutral-400">Expected Value</span>
+                  <span className="text-xs sm:text-sm font-mono text-neutral-300">
                     {anomaly.metrics.expectedValue.toLocaleString()} {anomaly.metrics.unit}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-neutral-400">Deviation</span>
-                  <span className={`text-sm font-mono font-bold ${
-                    Math.abs(anomaly.metrics.deviation) > 50 ? 'text-red-500' : 
+                  <span className="text-xs sm:text-sm text-neutral-400">Deviation</span>
+                  <span className={`text-xs sm:text-sm font-mono font-bold ${
+                    Math.abs(anomaly.metrics.deviation) > 50 ? 'text-red-500' :
                     Math.abs(anomaly.metrics.deviation) > 30 ? 'text-orange-500' : 'text-yellow-500'
                   }`}>
                     {anomaly.metrics.deviation > 0 ? '+' : ''}{anomaly.metrics.deviation.toFixed(1)}%
@@ -133,25 +115,24 @@ export function AnomalyDetailPanel({ anomaly, onClose, onResolve }: AnomalyDetai
           {/* Related Purchase Orders */}
           {anomaly.relatedPOs.length > 0 && (
             <Card className="bg-neutral-800 border-neutral-700">
-              <CardContent className="p-4 space-y-3">
+              <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">
                 <div className="flex items-center gap-2">
-                  <DollarSign className="w-4 h-4 text-orange-500" />
-                  <span className="text-xs text-neutral-400">RELATED PURCHASE ORDERS</span>
+                  <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500" />
+                  <span className="text-[10px] sm:text-xs text-neutral-400 uppercase tracking-wider">Related Purchase Orders</span>
                 </div>
-                
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+                <div className="space-y-2 max-h-48 sm:max-h-64 overflow-y-auto">
                   {anomaly.relatedPOs.map((po, idx) => (
-                    <div key={idx} className="p-3 bg-neutral-900 rounded border border-neutral-700">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="text-sm font-medium text-white">{po.item}</p>
-                          <p className="text-xs text-neutral-500">Order #{po.orderNo}</p>
+                    <div key={idx} className="p-2 sm:p-3 bg-neutral-900 rounded border border-neutral-700">
+                      <div className="flex justify-between items-start mb-1.5 sm:mb-2 gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs sm:text-sm font-medium text-white truncate">{po.item}</p>
+                          <p className="text-[10px] sm:text-xs text-neutral-500">Order #{po.orderNo}</p>
                         </div>
-                        <p className="text-sm font-mono text-orange-500">
+                        <p className="text-xs sm:text-sm font-mono text-orange-500 shrink-0">
                           ₹{(po.totalAmount / 100000).toFixed(2)}L
                         </p>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-[10px] sm:text-xs">
                         <div>
                           <span className="text-neutral-500">Qty:</span>
                           <span className="text-white ml-1">{po.minQty}-{po.maxQty}</span>
@@ -174,15 +155,14 @@ export function AnomalyDetailPanel({ anomaly, onClose, onResolve }: AnomalyDetai
 
           {/* Suggested Actions */}
           <Card className="bg-neutral-800 border-neutral-700">
-            <CardContent className="p-4 space-y-3">
+            <CardContent className="p-3 sm:p-4 space-y-2 sm:space-y-3">
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-orange-500" />
-                <span className="text-xs text-neutral-400">SUGGESTED ACTIONS</span>
+                <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500" />
+                <span className="text-[10px] sm:text-xs text-neutral-400 uppercase tracking-wider">Suggested Actions</span>
               </div>
-              
-              <ul className="space-y-2">
+              <ul className="space-y-1.5 sm:space-y-2">
                 {anomaly.suggestedActions.map((action, idx) => (
-                  <li key={idx} className="flex items-start gap-2 text-sm text-neutral-300">
+                  <li key={idx} className="flex items-start gap-2 text-xs sm:text-sm text-neutral-300">
                     <span className="text-orange-500 mt-0.5">•</span>
                     <span>{action}</span>
                   </li>
@@ -192,20 +172,15 @@ export function AnomalyDetailPanel({ anomaly, onClose, onResolve }: AnomalyDetai
           </Card>
 
           {/* Actions */}
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3">
             {onResolve && (
-              <Button
-                onClick={() => onResolve(anomaly)}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-              >
+              <Button onClick={() => onResolve(anomaly)}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm h-9 sm:h-10">
                 Mark as Resolved
               </Button>
             )}
-            <Button
-              onClick={onClose}
-              variant="outline"
-              className="flex-1 border-neutral-700 text-neutral-300 hover:bg-neutral-800"
-            >
+            <Button onClick={onClose} variant="outline"
+              className="flex-1 border-neutral-700 text-neutral-300 hover:bg-neutral-800 text-xs sm:text-sm h-9 sm:h-10">
               Close
             </Button>
           </div>
