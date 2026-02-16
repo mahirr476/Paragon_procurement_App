@@ -536,7 +536,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { ChevronRight, Settings, BarChart3, Zap, Database, Clock, Layers, Menu, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DashboardOverview } from "@/components/dashboard-overview"
@@ -559,7 +559,15 @@ export const dynamic = "force-dynamic"
 
 const VALID_SECTIONS = ["overview", "pending-po", "po", "reports", "intelligence", "systems"]
 
-export default function TacticalDashboard() {
+export default function TacticalDashboardPage() {
+  return (
+    <Suspense fallback={null}>
+      <TacticalDashboard />
+    </Suspense>
+  )
+}
+
+function TacticalDashboard() {
   const router = useRouter()
   const searchParams = useSearchParams()
   
