@@ -25,7 +25,18 @@ export async function POST(req: NextRequest) {
     const { password: _, ...userWithoutPassword } = user
     console.log("[v0] User logged in from database:", email)
 
-    return NextResponse.json({ success: true, user: userWithoutPassword })
+    return NextResponse.json({ 
+      success: true, 
+      user: {
+        id: userWithoutPassword.id,
+        email: userWithoutPassword.email,
+        name: userWithoutPassword.name,
+        company: userWithoutPassword.company,
+        empId: userWithoutPassword.empId,
+        role: userWithoutPassword.role,
+        createdAt: userWithoutPassword.createdAt,
+      }
+    })
   } catch (error) {
     console.error("[v0] Login error:", error)
     return NextResponse.json(

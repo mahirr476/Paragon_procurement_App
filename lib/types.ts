@@ -75,6 +75,7 @@ export interface User {
   email: string
   name: string
   company: string
+  empId?: string
   role: string
   createdAt: Date
 }

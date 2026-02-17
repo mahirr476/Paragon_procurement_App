@@ -5,12 +5,13 @@ export async function registerUser(
   password: string,
   name: string,
   company: string,
+  empId?: string,
 ): Promise<{ success: boolean; error?: string; user?: User }> {
   try {
     const response = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, name, company }),
+      body: JSON.stringify({ email, password, name, company, empId }),
     })
 
     const data = await response.json()

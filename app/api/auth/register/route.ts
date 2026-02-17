@@ -5,9 +5,9 @@ import { validatePassword } from "@/lib/utils"
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password, name, company } = await req.json()
+    const { email, password, name, company, empId } = await req.json()
 
-    console.log("[v0] Register API called with:", { email, name, company })
+    console.log("[v0] Register API called with:", { email, name, company, empId })
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
         password: hashedPassword,
         name,
         company,
+        empId,
         role: "user",
       },
       select: {
@@ -40,6 +41,7 @@ export async function POST(req: NextRequest) {
         email: true,
         name: true,
         company: true,
+        empId: true,
         role: true,
         createdAt: true,
       },
